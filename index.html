@@ -5,6 +5,162 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Arkitektverktøy</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+/* ── EIGEDOMSINFO — Native browser-implementasjon ──────────────── */
+var _eidMap = null;
+var _eidMarker = null;
+var _eidData = {};
+
+function eidSok() {
+  var q = document.getElementById('eid-query').value.trim();
+  if (!q) return;
+  var spin = document.getElementById('eid-spinner');
+  var drop = document.getElementById('eid-dropdown');
+  spin.style.display = 'flex';
+  drop.style.display = 'none';
+
+  fetch('https://ws.geonorge.no/adresser/v1/sok?sok=' + encodeURIComponent(q) + '&treffPerSide=7')
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      spin.style.display = 'none';
+      var treff = data.adresser || [];
+      if (!treff.length) {
+        drop.innerHTML = '<div class="eid-option"><span class="eid-opt-adr">Ingen treff for «' + q + '»</span></div>';
+        drop.style.display = 'block';
+        return;
+      }
+      drop.innerHTML = treff.map(function(t, i){
+        return '<div class="eid-option" onclick="eidVelg(' + i + ')" id="eid-opt-'+i+'">'
+          + '<span class="eid-opt-adr">' + (t.adressetekst || '') + '</span>'
+          + '<span class="eid-opt-sub">' + (t.kommunenavn || '') + ' · gnr ' + (t.gardsnummer||'') + '/bnr ' + (t.bruksnummer||'') + '</span>'
+          + '</div>';
+      }).join('');
+      drop.style.display = 'block';
+      drop._treff = treff;
+    })
+    .catch(function(e){
+      spin.style.display = 'none';
+      drop.innerHTML = '<div class="eid-option"><span class="eid-opt-adr">Feil: ' + e.message + '</span></div>';
+      drop.style.display = 'block';
+    });
+}
+
+function eidVelg(idx) {
+  var drop = document.getElementById('eid-dropdown');
+  var treff = drop._treff;
+  if (!treff || idx >= treff.length) return;
+  var adr = treff[idx];
+
+  var lat = (adr.representasjonspunkt && adr.representasjonspunkt.lat) ? adr.representasjonspunkt.lat : null;
+  var lon = (adr.representasjonspunkt && adr.representasjonspunkt.lon) ? adr.representasjonspunkt.lon : null;
+
+  _eidData = {
+    adresse:   (adr.adressenavn || '') + ' ' + (adr.nummer || ''),
+    postnr:    adr.postnummer || '',
+    poststad:  adr.poststed || '',
+    kommune:   adr.kommunenavn || '',
+    kommunenr: adr.kommunenummer || '',
+    gnr:       adr.gardsnummer || '',
+    bnr:       adr.bruksnummer || '',
+    lat: lat, lon: lon
+  };
+
+  drop.style.display = 'none';
+  document.getElementById('eid-query').value = adr.adressetekst || '';
+
+  eidVisResultat();
+  if (lat && lon) eidOppdaterKart(lat, lon);
+  eidHentRegulering(_eidData.kommunenr);
+  eidVisLenkjer();
+}
+
+function eidVisResultat() {
+  var d = _eidData;
+  var koordinat = (d.lat && d.lon) ? d.lat.toFixed(5) + ', ' + d.lon.toFixed(5) : '—';
+  document.getElementById('eid-res-adr').textContent    = d.adresse || '—';
+  document.getElementById('eid-res-postnr').textContent  = d.postnr ? d.postnr + ' ' + d.poststad : '—';
+  document.getElementById('eid-res-kom').textContent    = d.kommune || '—';
+  document.getElementById('eid-res-knr').textContent    = d.kommunenr || '—';
+  document.getElementById('eid-res-gnr').textContent    = d.gnr || '—';
+  document.getElementById('eid-res-bnr').textContent    = d.bnr || '—';
+  document.getElementById('eid-res-koord').textContent  = koordinat;
+  document.getElementById('eid-resultat').style.display = 'grid';
+  document.getElementById('eid-regplan-wrap').style.display = 'block';
+  document.getElementById('eid-links-wrap').style.display = 'block';
+  document.getElementById('eid-empty').style.display = 'none';
+}
+
+function eidOppdaterKart(lat, lon) {
+  if (!_eidMap) {
+    _eidMap = L.map('eid-kart', {zoomControl: true}).setView([lat, lon], 16);
+    L.tileLayer(
+      'https://opencache.statkart.no/gatekeeper/gk/gk.open_gmaps?layers=topo4&zoom={z}&x={x}&y={y}',
+      { attribution: '© <a href="https://kartverket.no">Kartverket</a>', maxZoom: 20 }
+    ).addTo(_eidMap);
+  } else {
+    _eidMap.setView([lat, lon], 16);
+  }
+  if (_eidMarker) _eidMap.removeLayer(_eidMarker);
+  _eidMarker = L.circleMarker([lat, lon], {
+    radius: 9, fillColor: '#2A6E5A', color: '#fff',
+    weight: 2.5, opacity: 1, fillOpacity: 0.92
+  }).addTo(_eidMap)
+    .bindPopup('<b>' + (_eidData.adresse || '') + '</b><br>gnr ' + _eidData.gnr + '/bnr ' + _eidData.bnr)
+    .openPopup();
+  setTimeout(function(){ _eidMap.invalidateSize(); }, 100);
+}
+
+function eidHentRegulering(knr) {
+  if (!knr) return;
+  var el = document.getElementById('eid-res-regplan');
+  el.textContent = 'Hentar …';
+
+  fetch('https://arealplaner.no/api/v1/kommuner/' + knr + '/planer/?type=Detaljregulering')
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      var planer = Array.isArray(data) ? data : [];
+      if (planer.length) {
+        el.textContent = planer[0].planNavn || planer[0].planId || 'Funne';
+      } else {
+        el.textContent = 'Ingen gjeldande detaljregulering registrert';
+      }
+    })
+    .catch(function(){
+      el.textContent = 'Kunne ikkje hente — sjå lenkje nedanfor';
+    });
+}
+
+function eidVisLenkjer() {
+  var d = _eidData;
+  var knr = d.kommunenr || '';
+  var links = document.getElementById('eid-link-grid');
+  links.innerHTML = ''
+    + '<a class="eid-link" href="https://arealplaner.no/' + knr + '" target="_blank">📋 Reguleringsplan</a>'
+    + '<a class="eid-link" href="https://www.kommunekart.com/?kommunenr=' + knr + '" target="_blank">🗺 Kommunekart</a>'
+    + '<a class="eid-link" href="https://www.norgeskart.no/#!?project=seeiendom&layers=1002&zoom=16&lat=' + (d.lat||0) + '&lon=' + (d.lon||0) + '" target="_blank">📍 Seeiendom</a>'
+    + '<a class="eid-link" href="https://innsyn.dibk.no/search?query=' + encodeURIComponent((d.adresse||'') + ', ' + (d.poststad||'')) + '" target="_blank">🏗 Byggesak dibk</a>'
+    + '<a class="eid-link" href="https://www.kartverket.no/eiendom/finn-eiendom?gnr=' + d.gnr + '&bnr=' + d.bnr + '&kommunenummer=' + knr + '" target="_blank">🏠 Kartverket eiendom</a>';
+}
+
+function eidTastEvent(e) {
+  if (e.key === 'Enter') eidSok();
+}
+
+// Initialiser kart når eigedomsinfo-fana vert open
+function initEidMap() {
+  if (!_eidMap && document.getElementById('eid-kart')) {
+    _eidMap = L.map('eid-kart', {zoomControl:true}).setView([65.4, 14.0], 5);
+    L.tileLayer(
+      'https://opencache.statkart.no/gatekeeper/gk/gk.open_gmaps?layers=topo4&zoom={z}&x={x}&y={y}',
+      { attribution: '© <a href="https://kartverket.no">Kartverket</a>', maxZoom: 20 }
+    ).addTo(_eidMap);
+    setTimeout(function(){ _eidMap.invalidateSize(); }, 150);
+  }
+}
+</script>
+
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -181,27 +337,112 @@ body{font-family:var(--sans);font-size:14px;line-height:1.5;color:var(--text);ba
 .rrt-fee{font-family:var(--mono);font-size:12px;font-weight:500;text-align:right}.rrt-fee.accent{color:var(--accent);font-weight:700;font-size:13px}
 .weighted-rate-note{font-size:12px;color:var(--text-mid);margin-top:6px;display:flex;justify-content:space-between;}.weighted-rate-note strong{font-family:var(--mono);color:var(--text)}
 
-/* ── EIGEDOMSINFO ──────────────────────────────────────────────── */
-#page-eigedomsinfo{height:calc(100vh - 52px);display:none;flex-direction:column}
-#page-eigedomsinfo.active{display:flex;animation:fadeIn .2s ease both}
-.eiendom-wrap{display:flex;flex-direction:column;flex:1;overflow:hidden}
-.eiendom-toolbar{display:flex;align-items:center;gap:10px;padding:10px 20px;background:var(--surface);border-bottom:1.5px solid var(--border);flex-shrink:0;}
-.eiendom-brand{font-family:var(--display);font-size:13px;font-weight:700;color:var(--text);letter-spacing:.02em;}
-.eiendom-status{font-size:12px;color:var(--text-dim);display:flex;align-items:center;gap:7px;margin-left:14px;}
-.eiendom-dot{width:7px;height:7px;border-radius:50%;background:var(--border-strong);flex-shrink:0;transition:background .3s;}
-.eiendom-dot.online{background:#16a34a}.eiendom-dot.offline{background:var(--fail)}
-@keyframes dotblink{0%,100%{opacity:1}50%{opacity:.25}}
-.eiendom-dot.checking{background:var(--warn);animation:dotblink .9s ease-in-out infinite}
-.eiendom-url{font-family:var(--mono);font-size:11px;color:var(--text-dim);background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);padding:3px 9px;margin-left:auto;}
-.eiendom-btn{font-size:12px;padding:5px 13px;border-radius:var(--r-sm);border:1.5px solid var(--border);background:transparent;cursor:pointer;color:var(--text-mid);font-family:var(--sans);transition:.15s;}
-.eiendom-btn:hover{background:var(--accent-bg);border-color:var(--accent);color:var(--accent)}
-.eiendom-frame{flex:1;border:none;width:100%;background:var(--bg)}
-.eiendom-offline{display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;flex:1;text-align:center;padding:52px 28px;background:var(--bg);}
-.eiendom-offline-icon{font-size:2.8rem;opacity:.4;line-height:1}
-.eiendom-offline h3{font-family:var(--display);font-size:1.15rem;color:var(--text-mid)}
-.eiendom-offline p{font-size:.88rem;color:var(--text-dim);max-width:380px;line-height:1.75}
-.eiendom-offline code{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:2px 8px;font-family:var(--mono);font-size:.82rem;color:var(--accent);}
-.eiendom-cmd{background:var(--nav-bg);color:#4DB890;font-family:var(--mono);font-size:.88rem;padding:11px 22px;border-radius:var(--r);border:1px solid rgba(255,255,255,.06);letter-spacing:.02em;}
+/* ── EIGEDOMSINFO (native) ────────────────────────────────── */
+#page-eigedomsinfo .container{padding-top:2rem}
+.eid-search-wrap{
+  display:flex;gap:8px;margin-bottom:8px;
+  animation:fadeUp .22s .05s ease both;opacity:0;animation-fill-mode:both;
+}
+.eid-input{
+  flex:1;padding:.6rem .9rem;font-family:var(--mono);font-size:14px;
+  border:1.5px solid var(--border-strong);border-radius:var(--r);
+  background:var(--surface);color:var(--text);outline:none;
+  transition:border-color .12s;
+}
+.eid-input:focus{border-color:var(--accent)}
+.eid-input::placeholder{color:var(--text-dim);font-size:13px}
+.eid-btn{
+  padding:.6rem 1.2rem;background:var(--nav-bg);color:#fff;
+  border:none;border-radius:var(--r);font-family:var(--display);
+  font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;
+  transition:background .15s;
+}
+.eid-btn:hover{background:#1e2e28}
+.eid-dropdown{
+  background:var(--surface);border:1.5px solid var(--border-strong);
+  border-radius:var(--r);overflow:hidden;margin-bottom:1rem;display:none;
+}
+.eid-option{
+  padding:.65rem 1rem;cursor:pointer;font-size:13px;
+  border-bottom:1px solid var(--border);transition:background .08s;
+  display:flex;justify-content:space-between;align-items:center;
+}
+.eid-option:last-child{border-bottom:none}
+.eid-option:hover{background:var(--accent-bg)}
+.eid-opt-adr{font-weight:500}
+.eid-opt-sub{font-size:11px;color:var(--text-dim);font-family:var(--mono)}
+.eid-spinner{
+  display:none;align-items:center;gap:8px;
+  font-size:13px;color:var(--text-dim);padding:.4rem 0;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.eid-spin-icon{
+  width:14px;height:14px;border:2px solid var(--border-strong);
+  border-top-color:var(--accent);border-radius:50%;
+  animation:spin .7s linear infinite;
+}
+.eid-grid{
+  display:grid;grid-template-columns:1fr 1fr;gap:16px;
+  animation:fadeUp .22s ease both;
+}
+@media(max-width:680px){.eid-grid{grid-template-columns:1fr}}
+.eid-info-card{
+  background:var(--surface);border:1.5px solid var(--border);
+  border-radius:var(--r-lg);overflow:hidden;
+}
+.eid-kv{
+  display:flex;justify-content:space-between;align-items:baseline;
+  padding:.55rem 1rem;border-bottom:1px solid var(--border);font-size:13px;
+}
+.eid-kv:last-child{border-bottom:none}
+.eid-key{color:var(--text-mid);font-size:12px}
+.eid-val{font-family:var(--mono);font-size:12px;font-weight:500;
+  color:var(--text);text-align:right;max-width:58%;word-break:break-word}
+.eid-val.accent{color:var(--accent);font-weight:600}
+.eid-map-card{
+  background:var(--surface);border:1.5px solid var(--border);
+  border-radius:var(--r-lg);overflow:hidden;min-height:300px;
+}
+#eid-kart{height:300px;width:100%}
+.eid-map-foot{
+  padding:.5rem 1rem;font-size:11px;color:var(--text-dim);
+  border-top:1px solid var(--border);display:flex;justify-content:space-between;
+}
+.eid-links{
+  margin-top:16px;background:var(--surface);
+  border:1.5px solid var(--border);border-radius:var(--r-lg);
+  padding:1rem;animation:fadeUp .22s .1s ease both;opacity:0;animation-fill-mode:both;
+}
+.eid-links-title{
+  font-size:11px;font-weight:600;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--text-dim);margin-bottom:.75rem;
+}
+.eid-link-grid{display:flex;gap:8px;flex-wrap:wrap}
+.eid-link{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:.45rem .9rem;border:1.5px solid var(--border-strong);
+  border-radius:20px;font-size:12px;font-weight:500;
+  color:var(--text-mid);text-decoration:none;
+  transition:all .12s;cursor:pointer;background:none;
+}
+.eid-link:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-bg)}
+.eid-regplan{
+  margin-top:16px;padding:1rem 1.25rem;
+  background:var(--surface);border:1.5px solid var(--border);
+  border-radius:var(--r-lg);font-size:13px;
+  animation:fadeUp .22s .15s ease both;opacity:0;animation-fill-mode:both;
+}
+.eid-regplan-label{
+  font-size:11px;font-weight:600;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--text-dim);margin-bottom:.4rem;
+}
+.eid-regplan-val{font-weight:500;color:var(--text)}
+.eid-empty{
+  text-align:center;padding:3rem 1rem;color:var(--text-dim);
+  font-size:13px;line-height:1.8;
+  animation:fadeUp .22s .1s ease both;opacity:0;animation-fill-mode:both;
+}
+.eid-empty-icon{font-size:2.5rem;display:block;margin-bottom:.75rem;opacity:.35}
 </style>
 </head>
 <body>
@@ -475,10 +716,7 @@ function switchPage(id){
   });
   window.scrollTo(0,0);
   if(id==='eigedomsinfo'){
-    sjekkTilkopling();
-    if(!_sjekkInterval) _sjekkInterval=setInterval(sjekkTilkopling,8000);
-  } else {
-    clearInterval(_sjekkInterval); _sjekkInterval=null;
+    setTimeout(initEidMap, 50);
   }
 }
 function switchSystem(sys){
@@ -890,28 +1128,84 @@ window.addEventListener('load',function(){updateDiffLabel();updateRateSumDisplay
 
 <!-- EIGEDOMSINFO PAGE -->
 <div class="page" id="page-eigedomsinfo">
-  <div class="eiendom-wrap">
-    <div class="eiendom-toolbar">
-      <span class="eiendom-brand">&#x1F5FA; Eigedomsinfo</span>
-      <span class="eiendom-status">
-        <span class="eiendom-dot checking" id="eiendom-dot"></span>
-        <span id="eiendom-status-tekst">Sjekkar tilkopling &#x2026;</span>
-      </span>
-      <span class="eiendom-url">localhost : 5051</span>
-      <button class="eiendom-btn" onclick="lastEiendomPaaNytt()">&#x27F3;&#xA0; Last p&#xE5; nytt</button>
-      <button class="eiendom-btn" onclick="window.open('http://localhost:5051','_blank')">&#x2197;&#xA0; Opna i nettlesar</button>
-    </div>
-    <iframe id="eiendom-frame" class="eiendom-frame" src="about:blank" title="Eigedomsinformasjon" sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-downloads" style="display:none"></iframe>
-    <div class="eiendom-offline" id="eiendom-offline">
-      <div class="eiendom-offline-icon">&#x1F50C;</div>
-      <h3>Eigedomsinfo-serveren k&#xF8;yrer ikkje</h3>
-      <p>Start <code>eiendom_info_web.py</code> i terminalen din, s&#xE5; lastar verkt&#xF8;yet seg automatisk her inne.</p>
-      <div class="eiendom-cmd">python eiendom_info_web.py</div>
-      <p style="font-size:.8rem;margin-top:-4px">Serveren startar p&#xE5; port 5051. Fana oppdaterer seg sjølv kvart 8. sekund.</p>
-      <button class="eiendom-btn" onclick="sjekkTilkopling()" style="margin-top:4px;padding:8px 20px">&#x1F504;&#xA0; Pr&#xF8;v igjen</button>
-    </div>
-  </div>
-</div>
+  <div class="container narrow">
 
+    <div class="page-head">
+      <div class="page-tag">Verkt&#xF8;y 003</div>
+      <h2 class="page-title">Eigedomsinfo</h2>
+      <p class="page-sub">S&#xF8;k p&#xE5; adresse og hent eigedomsdata, kart og reguleringsplan direkte i nettlesaren</p>
+    </div>
+
+    <!-- S&#xF8;kefelt -->
+    <div class="eid-search-wrap">
+      <input
+        class="eid-input" id="eid-query" type="text"
+        placeholder="Skriv adresse, t.d. Storgata 1 Bod&#xF8; &#x2026;"
+        onkeydown="eidTastEvent(event)"
+        autocomplete="off"
+      />
+      <button class="eid-btn" onclick="eidSok()">&#x1F50D;&#xA0; S&#xF8;k</button>
+    </div>
+
+    <!-- Spinner -->
+    <div class="eid-spinner" id="eid-spinner">
+      <div class="eid-spin-icon"></div>
+      <span>S&#xF8;kjer i Geonorge &#x2026;</span>
+    </div>
+
+    <!-- Dropdown med treff -->
+    <div class="eid-dropdown" id="eid-dropdown"></div>
+
+    <!-- Tom-melding (standard) -->
+    <div class="eid-empty" id="eid-empty">
+      <span class="eid-empty-icon">&#x1F50D;</span>
+      S&#xF8;k p&#xE5; ei adresse over for &#xE5; hente<br/>
+      eigedomsdata, kart og reguleringsplan.
+    </div>
+
+    <!-- Resultat-grid (skjult til s&#xF8;k) -->
+    <div class="eid-grid" id="eid-resultat" style="display:none">
+
+      <!-- Venstre: Eigedomsdata -->
+      <div class="eid-info-card">
+        <div class="sec-head">Eigedomsdata</div>
+        <div class="eid-kv"><span class="eid-key">Adresse</span><span class="eid-val accent" id="eid-res-adr">&#x2014;</span></div>
+        <div class="eid-kv"><span class="eid-key">Postnr / stad</span><span class="eid-val" id="eid-res-postnr">&#x2014;</span></div>
+        <div class="eid-kv"><span class="eid-key">Kommune</span><span class="eid-val" id="eid-res-kom">&#x2014;</span></div>
+        <div class="eid-kv"><span class="eid-key">Kommunenummer</span><span class="eid-val" id="eid-res-knr">&#x2014;</span></div>
+        <div class="eid-kv"><span class="eid-key">Gardsnummer</span><span class="eid-val" id="eid-res-gnr">&#x2014;</span></div>
+        <div class="eid-kv"><span class="eid-key">Bruksnummer</span><span class="eid-val" id="eid-res-bnr">&#x2014;</span></div>
+        <div class="eid-kv"><span class="eid-key">Koordinat (WGS84)</span><span class="eid-val" id="eid-res-koord">&#x2014;</span></div>
+      </div>
+
+      <!-- H&#xF8;gre: Kart -->
+      <div class="eid-map-card">
+        <div id="eid-kart"></div>
+        <div class="eid-map-foot">
+          <span>Kartverket topo4 &#xB7; Leaflet</span>
+          <span>Klikk markeren for meir info</span>
+        </div>
+      </div>
+
+    </div><!-- /eid-grid -->
+
+    <!-- Reguleringsplan -->
+    <div class="eid-regplan" id="eid-regplan-wrap" style="display:none">
+      <div class="eid-regplan-label">Gjeldande reguleringsplan (arealplaner.no)</div>
+      <div class="eid-regplan-val" id="eid-res-regplan">&#x2014;</div>
+    </div>
+
+    <!-- Lenkjer -->
+    <div class="eid-links" id="eid-links-wrap" style="display:none">
+      <div class="eid-links-title">Opne i ekstern teneste</div>
+      <div class="eid-link-grid" id="eid-link-grid"></div>
+    </div>
+
+  </div>
+  <footer class="page-footer">
+    <span>Arkitektverkt&#xF8;y &#xB7; Eigedomsinfo</span>
+    <span>Data fr&#xE5; Geonorge, arealplaner.no og Kartverket</span>
+  </footer>
+</div>
 </body>
 </html>
