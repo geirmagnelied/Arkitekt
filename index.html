@@ -6,6 +6,7 @@
 <title>Arkitektverktøy</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
 /* ── EIGEDOMSINFO — Native browser-implementasjon ──────────────── */
@@ -443,6 +444,96 @@ body{font-family:var(--sans);font-size:14px;line-height:1.5;color:var(--text);ba
   animation:fadeUp .22s .1s ease both;opacity:0;animation-fill-mode:both;
 }
 .eid-empty-icon{font-size:2.5rem;display:block;margin-bottom:.75rem;opacity:.35}
+
+/* ── BYGGESAKSARKIV ──────────────────────────────────────────── */
+.eid-byggesak{
+  margin-top:16px;background:var(--surface);
+  border:1.5px solid var(--border);border-radius:var(--r-lg);
+  overflow:hidden;
+  animation:fadeUp .22s .2s ease both;opacity:0;animation-fill-mode:both;
+}
+.eid-byggesak-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:.75rem 1.25rem .5rem;
+  border-bottom:1px solid var(--border);
+}
+.eid-byggesak-title{
+  font-size:11px;font-weight:600;letter-spacing:.08em;
+  text-transform:uppercase;color:var(--text-dim);
+}
+.eid-bgsak-badge{
+  font-size:11px;font-family:var(--mono);font-weight:500;
+  padding:2px 9px;border-radius:20px;
+  background:var(--accent-bg);color:var(--accent);
+}
+.eid-byggesak-body{padding:1.1rem 1.25rem}
+.eid-bgsak-info{
+  font-size:13px;color:var(--text-mid);line-height:1.7;margin-bottom:1rem;
+}
+.eid-bgsak-info strong{color:var(--text)}
+.eid-bgsak-tabs{
+  display:flex;gap:0;border:1.5px solid var(--border-strong);
+  border-radius:var(--r);overflow:hidden;margin-bottom:1rem;
+}
+.eid-bgsak-tab{
+  flex:1;padding:.5rem .75rem;border:none;cursor:pointer;
+  font-family:var(--sans);font-size:12.5px;font-weight:500;
+  background:var(--surface);color:var(--text-mid);
+  transition:background .12s,color .12s;text-align:center;
+}
+.eid-bgsak-tab+.eid-bgsak-tab{border-left:1.5px solid var(--border-strong)}
+.eid-bgsak-tab.active{background:var(--nav-bg);color:#fff}
+.eid-bgsak-tab:not(.active):hover{background:var(--accent-bg);color:var(--accent)}
+.eid-bgsak-actions{display:flex;flex-direction:column;gap:10px}
+.eid-bgsak-btn{
+  display:flex;align-items:center;gap:10px;
+  padding:.85rem 1.1rem;border-radius:var(--r);
+  border:1.5px solid var(--border);cursor:pointer;
+  font-family:var(--sans);font-size:13px;font-weight:500;
+  background:var(--surface);color:var(--text);
+  transition:all .15s;text-align:left;width:100%;
+}
+.eid-bgsak-btn:hover{border-color:var(--accent);background:var(--accent-bg);color:var(--accent)}
+.eid-bgsak-btn.primary{
+  background:var(--nav-bg);color:#fff;border-color:var(--nav-bg);
+}
+.eid-bgsak-btn.primary:hover{background:#1e2e28}
+.eid-bgsak-btn-icon{font-size:18px;flex-shrink:0}
+.eid-bgsak-btn-txt strong{display:block;margin-bottom:1px}
+.eid-bgsak-btn-txt small{font-size:11.5px;opacity:.7;font-weight:400}
+.eid-progress{
+  display:none;margin-top:.75rem;padding:.75rem 1rem;
+  background:var(--bg);border-radius:var(--r);border:1px solid var(--border);
+  font-size:13px;color:var(--text-mid);
+}
+.eid-progress-bar-wrap{
+  height:6px;background:var(--border);border-radius:3px;
+  margin-top:.5rem;overflow:hidden;
+}
+.eid-progress-bar{
+  height:100%;background:var(--accent);border-radius:3px;
+  transition:width .3s ease;width:0%;
+}
+.eid-step-list{margin-top:.5rem;font-size:12px}
+.eid-step{display:flex;align-items:center;gap:6px;padding:2px 0;opacity:.4;transition:opacity .2s}
+.eid-step.active{opacity:1;color:var(--accent)}
+.eid-step.done{opacity:.7}
+.eid-step-dot{
+  width:8px;height:8px;border-radius:50%;background:var(--border-strong);flex-shrink:0;
+}
+.eid-step.active .eid-step-dot{background:var(--accent)}
+.eid-step.done .eid-step-dot{background:var(--pass)}
+.eid-howto{
+  margin-top:.75rem;padding:.85rem 1rem;background:#FEF7EC;
+  border:1px solid #F0D080;border-radius:var(--r);
+  font-size:12.5px;line-height:1.7;color:#5A4200;display:none;
+}
+.eid-howto ol{padding-left:1.2rem;margin-top:.25rem}
+.eid-howto li{margin-bottom:2px}
+.eid-howto code{
+  background:rgba(0,0,0,.06);padding:1px 5px;
+  border-radius:3px;font-family:var(--mono);font-size:11.5px;
+}
 </style>
 </head>
 <body>
@@ -1004,6 +1095,459 @@ function lastEiendomPaaNytt(){
 filterList('A');filterList('B');
 window.addEventListener('load',function(){updateDiffLabel();updateRateSumDisplay();priceUpdate();});
 </script>
+<script>
+/* ── BYGGESAKSARKIV ──────────────────────────────────────────────────── */
+var _bgsaktPeriode = 'etter';
+
+function eidBgsaktab(el, periode) {
+  document.querySelectorAll('.eid-bgsak-tab').forEach(function(t){ t.classList.remove('active'); });
+  el.classList.add('active');
+  _bgsaktPeriode = periode;
+}
+
+function eidOpnaInnsynsportal() {
+  var gnr = _eidData.gnr || '';
+  var bnr = _eidData.bnr || '';
+  var url = 'https://bodo.innsynsportal.no/byggsak?gnr=' + gnr + '&bnr=' + bnr;
+  window.open(url, '_blank');
+}
+
+function eidSetBgsStep(step, state) {
+  var el = document.getElementById('eid-step-' + step);
+  if (!el) return;
+  el.className = 'eid-step ' + (state || '');
+}
+
+function eidSetBgsBar(pct) {
+  var bar = document.getElementById('eid-bgsak-bar');
+  if (bar) bar.style.width = pct + '%';
+}
+
+function eidSetBgsStatus(tekst) {
+  var el = document.getElementById('eid-bgsak-status');
+  if (el) el.textContent = tekst;
+}
+
+/* Generer Python-skript (pre-konfigurert med gnr/bnr/periode) */
+function eidGenererPythonSkript(gnr, bnr, periode) {
+  var periodeTekst = periode === 'foer' ? 'foer_2017' : periode === 'begge' ? 'alle' : 'etter_2017';
+  var inkluderEldre = (periode === 'foer' || periode === 'begge') ? 'True' : 'False';
+  var inkluderNy   = (periode === 'etter' || periode === 'begge') ? 'True' : 'False';
+
+  return `#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Bodoe Byggesaksarkiv - Automatisk nedlasting
+=============================================
+Eigedom : gnr ${gnr} / bnr ${bnr}
+Periode : ${periodeTekst}
+
+Krev: Python 3.9+, playwright, requests
+Installer: pip install playwright requests && python -m playwright install chromium
+"""
+import os, sys, time, json, zipfile, re
+from pathlib import Path
+from datetime import datetime
+
+# ── Konfigurasjon (auto-satt av Arkitektverktoy) ──────────────────────────────
+GNR              = ${gnr}
+BNR              = ${bnr}
+INKLUDER_ETTER   = ${inkluderNy}     # Etter 2017 (Documaster)
+INKLUDER_FOER    = ${inkluderEldre}  # Foer 2017 (eldre arkiv)
+BASE_URL         = "https://bodo.innsynsportal.no"
+UTMAPPE          = Path.home() / "Downloads" / f"Byggesak_{GNR}_{BNR}"
+
+# ─────────────────────────────────────────────────────────────────────────────
+def installer_playwright():
+    """Installer playwright om ikkje tilgjengeleg."""
+    try:
+        from playwright.sync_api import sync_playwright
+        return True
+    except ImportError:
+        print("Installerer playwright...")
+        os.system(f'"{sys.executable}" -m pip install playwright requests --quiet')
+        os.system(f'"{sys.executable}" -m playwright install chromium')
+        return True
+
+def hent_saker_for_eigedom(page, gnr, bnr):
+    """Soek etter byggesaker for gnr/bnr i Documaster."""
+    print(f"\nSoekjer: gnr {gnr} / bnr {bnr}...")
+    
+    page.goto(f"{BASE_URL}/byggsak", wait_until="networkidle", timeout=30000)
+    time.sleep(2)
+    
+    # Proevar ulike soeketilnaeermingar
+    saker = []
+    
+    # Metode 1: Sok direkte
+    try:
+        soekefelt = page.query_selector('input[placeholder*="gnr"], input[placeholder*="Gnr"], input[type="search"], .search-input')
+        if soekefelt:
+            soekefelt.fill(f"gnr {gnr} bnr {bnr}")
+            soekefelt.press("Enter")
+            time.sleep(3)
+    except Exception as e:
+        print(f"  Soeketilnærming 1 feila: {e}")
+    
+    # Hent alle sakslenkjer frå resultatsida
+    try:
+        lenkjer = page.query_selector_all('a[href*="case"], a[href*="sak"], a[href*="/byggsak/"]')
+        for l in lenkjer:
+            href = l.get_attribute('href')
+            if href and ('case' in href or 'sak' in href):
+                full_url = href if href.startswith('http') else BASE_URL + href
+                tekst = l.text_content().strip()
+                if full_url not in saker:
+                    saker.append({'url': full_url, 'tittel': tekst})
+    except Exception as e:
+        print(f"  Henting av lenkjer feila: {e}")
+    
+    return saker
+
+def last_ned_dokument(page, sak_url, utmappe):
+    """Last ned alle dokument fraa ei sak."""
+    page.goto(sak_url, wait_until="networkidle", timeout=30000)
+    time.sleep(2)
+    
+    nedlastingar = []
+    
+    # Finn alle nedlastingslenkjer (PDF, DWG, etc.)
+    lenkjer = page.query_selector_all('a[href*=".pdf"], a[href*=".PDF"], a[href*="download"], a[href*="dokument"]')
+    
+    import requests
+    session = requests.Session()
+    cookies = {c['name']: c['value'] for c in page.context.cookies()}
+    
+    for i, l in enumerate(lenkjer):
+        href = l.get_attribute('href')
+        if not href:
+            continue
+        
+        full_url = href if href.startswith('http') else BASE_URL + href
+        filnamn  = os.path.basename(href.split('?')[0]) or f"dokument_{i+1}.pdf"
+        filnamn  = re.sub(r'[^\w\-_. ]', '_', filnamn)
+        if not filnamn.endswith(('.pdf', '.PDF', '.dwg', '.DWG', '.jpg', '.png')):
+            filnamn += '.pdf'
+        
+        outpath = utmappe / filnamn
+        outpath.parent.mkdir(parents=True, exist_ok=True)
+        
+        try:
+            r = session.get(full_url, cookies=cookies, timeout=30, stream=True)
+            if r.ok:
+                with open(outpath, 'wb') as f:
+                    for chunk in r.iter_content(8192):
+                        f.write(chunk)
+                nedlastingar.append(str(outpath))
+                print(f"  OK: {filnamn} ({outpath.stat().st_size // 1024} KB)")
+            else:
+                print(f"  Feil ({r.status_code}): {filnamn}")
+        except Exception as e:
+            print(f"  Nedlastingsfeil: {filnamn} -> {e}")
+    
+    return nedlastingar
+
+def lag_zip(utmappe, gnr, bnr):
+    """Pak alle nedlasta filer som ZIP."""
+    zip_sti = utmappe.parent / f"Byggesak_{gnr}_{bnr}_{datetime.now().strftime('%Y%m%d')}.zip"
+    filtal = 0
+    with zipfile.ZipFile(zip_sti, 'w', zipfile.ZIP_DEFLATED) as zf:
+        for fil in utmappe.rglob('*'):
+            if fil.is_file():
+                zf.write(fil, fil.relative_to(utmappe))
+                filtal += 1
+    print(f"\nZIP oppretta: {zip_sti}")
+    print(f"Totalt {filtal} filer")
+    return zip_sti
+
+def main():
+    installer_playwright()
+    from playwright.sync_api import sync_playwright
+    
+    UTMAPPE.mkdir(parents=True, exist_ok=True)
+    alle_nedlasta = []
+    
+    print("=" * 50)
+    print(f"Bodoe Byggesaksarkiv - gnr {GNR} / bnr {BNR}")
+    print("=" * 50)
+    
+    with sync_playwright() as pw:
+        browser = pw.chromium.launch(headless=True)
+        ctx     = browser.new_context()
+        page    = ctx.new_page()
+        
+        if INKLUDER_ETTER:
+            print("\n>>> ETTER 2017 (Documaster/bodo.innsynsportal.no)")
+            saker = hent_saker_for_eigedom(page, GNR, BNR)
+            print(f"Fann {len(saker)} sak(er)")
+            
+            for sak in saker:
+                sakmappe = UTMAPPE / "etter_2017" / re.sub(r'[^\w ]', '_', sak.get('tittel','sak'))[:60]
+                sakmappe.mkdir(parents=True, exist_ok=True)
+                print(f"\n  Sak: {sak.get('tittel','')}")
+                filer = last_ned_dokument(page, sak['url'], sakmappe)
+                alle_nedlasta.extend(filer)
+        
+        if INKLUDER_FOER:
+            print("\n>>> FOER 2017 (eldre arkiv)")
+            print("  Aaapnar eldre arkivside for Bodoe...")
+            # Det eldre arkivet for Bodoe ligg paa kommunen si eiga side
+            # og krev i mange tilfelle manuell henvendelse eller ein annan innsynsportal
+            eldre_url = f"https://www.bodo.kommune.no/byggesak/?gnr={GNR}&bnr={BNR}"
+            page.goto(eldre_url, wait_until="networkidle", timeout=20000)
+            time.sleep(2)
+            # Proevar aa hente direkte lenkjer
+            lenkjer = page.query_selector_all('a[href*=".pdf"]')
+            print(f"  Fann {len(lenkjer)} PDF-lenkjer i eldre arkiv")
+            import requests
+            session = requests.Session()
+            cookies = {c['name']: c['value'] for c in ctx.cookies()}
+            eldre_mappe = UTMAPPE / "foer_2017"
+            eldre_mappe.mkdir(parents=True, exist_ok=True)
+            for i, l in enumerate(lenkjer):
+                href = l.get_attribute('href') or ''
+                if not href.endswith('.pdf'): continue
+                full_url = href if href.startswith('http') else 'https://www.bodo.kommune.no' + href
+                filnamn  = os.path.basename(href) or f"eldre_{i+1}.pdf"
+                outpath  = eldre_mappe / filnamn
+                try:
+                    r = session.get(full_url, cookies=cookies, timeout=30)
+                    if r.ok:
+                        outpath.write_bytes(r.content)
+                        alle_nedlasta.append(str(outpath))
+                        print(f"    OK: {filnamn}")
+                except Exception as e:
+                    print(f"    Feil: {filnamn}: {e}")
+        
+        ctx.close()
+        browser.close()
+    
+    print(f"\nTotalt {len(alle_nedlasta)} fil(er) lasta ned til {UTMAPPE}")
+    
+    if alle_nedlasta:
+        zip_sti = lag_zip(UTMAPPE, GNR, BNR)
+        print(f"\nAaapnar utmappe...")
+        try:
+            os.startfile(str(UTMAPPE.parent))  # Windows
+        except Exception:
+            os.system(f'open "{UTMAPPE.parent}"')  # Mac
+    else:
+        print("\nINGEN FILER FUNNE.")
+        print("Proeiv aa aapne portalen manuelt:")
+        print(f"  https://bodo.innsynsportal.no/byggsak?gnr={GNR}&bnr={BNR}")
+    
+    print("\nFerdig! Trykk Enter for aa lukke...")
+    input()
+
+if __name__ == '__main__':
+    main()
+`;
+}
+
+/* Generer Windows .bat-startar */
+function eidGenererBat() {
+  return `@echo off
+chcp 65001 >nul
+title Byggesaksarkiv - Bodo Kommune
+echo.
+echo  ============================================
+echo   BYGGESAKSARKIV - Bodo Kommune
+echo  ============================================
+echo.
+
+:: Sjekk om Python er installert
+python --version >nul 2>&1
+if errorlevel 1 (
+  echo  Python er ikkje installert.
+  echo  Aapnar python.org i nettlesaren din...
+  echo.
+  echo  1. Last ned og installer Python fraa python.org
+  echo  2. VIKTIG: Kryss av "Add Python to PATH" under installasjonen
+  echo  3. Dobbeltklikk denne fila paa nytt
+  echo.
+  start https://www.python.org/downloads/
+  pause
+  exit /b 1
+)
+
+echo  Python funne. Installerer avhengigheiter...
+echo  (Dette tar 1-3 minutt foerste gong)
+echo.
+pip install playwright requests --quiet --disable-pip-version-check
+python -m playwright install chromium --quiet
+
+echo.
+echo  Startar nedlasting...
+echo.
+python last_ned_byggesak.py
+
+pause
+`;
+}
+
+/* Generer macOS .command-startar */
+function eidGenererCommand() {
+  return `#!/bin/bash
+echo ""
+echo " ============================================"
+echo "  BYGGESAKSARKIV - Bodo Kommune"
+echo " ============================================"
+echo ""
+
+# Sjekk Python
+if ! command -v python3 &> /dev/null; then
+    echo " Python3 er ikkje installert."
+    echo " Installer via Homebrew: brew install python"
+    echo " Eller last ned fraa: https://www.python.org/downloads/"
+    open "https://www.python.org/downloads/"
+    exit 1
+fi
+
+echo " Installerer avhengigheiter..."
+python3 -m pip install playwright requests --quiet
+python3 -m playwright install chromium
+
+echo ""
+echo " Startar nedlasting..."
+python3 last_ned_byggesak.py
+`;
+}
+
+/* Generer README */
+function eidGenererReadme(gnr, bnr, periode) {
+  var periodeNorsk = periode === 'foer' ? 'Før 2017' : periode === 'begge' ? 'Alle periodar' : 'Etter 2017';
+  return `# Byggesaksarkiv - Bodø Kommune
+
+Eigedom   : gnr ${gnr} / bnr ${bnr}
+Periode   : ${periodeNorsk}
+Generert  : ${new Date().toLocaleDateString('nb-NO')}
+
+## Slik brukar du pakken
+
+### Windows
+1. Dobbeltklikk **start.bat**
+2. Fyrste gong: installerer automatisk nødvendige program (~2-3 min)
+3. Dokumenta vert lagra i:
+   C:\Brukar\Downloads\Byggesak_${gnr}_${bnr}\
+
+### Mac / Linux  
+1. Opne Terminal
+2. Kjør: **chmod +x start.command && ./start.command**
+
+## Krav
+- Python 3.9 eller nyare (gratis frå python.org)
+- Internettilgang
+
+## Om portalen
+- Etter 2017: bodo.innsynsportal.no (Documaster)
+- Før 2017:   bodo.kommune.no (eldre arkiv)
+
+Generert av Arkitektverktøy · github.io
+`;
+}
+
+/* Hovudfunksjon: generer og last ned ZIP-pakke */
+async function eidLastNedPakke() {
+  var gnr = _eidData.gnr;
+  var bnr = _eidData.bnr;
+
+  if (!gnr || !bnr) {
+    alert('Vel ei eigedom ved å søkje etter adresse fyrst.');
+    return;
+  }
+
+  if (typeof JSZip === 'undefined') {
+    alert('JSZip er ikkje lasta. Sjekk internettilkoplinga og prøv igjen.');
+    return;
+  }
+
+  var prog = document.getElementById('eid-bgsak-progress');
+  var howto = document.getElementById('eid-bgsak-howto');
+  prog.style.display = 'block';
+  howto.style.display = 'none';
+
+  function setStep(n, state) {
+    var el = document.getElementById('eid-step-' + n);
+    if (el) el.className = 'eid-step ' + (state || '');
+  }
+  function setBar(p) {
+    var b = document.getElementById('eid-bgsak-bar');
+    if (b) b.style.width = p + '%';
+  }
+  function setStatus(t) {
+    var s = document.getElementById('eid-bgsak-status');
+    if (s) s.textContent = t;
+  }
+
+  try {
+    var zip = new JSZip();
+
+    setStep(1, 'active'); setStatus('Konfigurerer skript med gnr ' + gnr + '/bnr ' + bnr + ' …'); setBar(10);
+    await new Promise(function(r){ setTimeout(r, 200); });
+
+    zip.file('last_ned_byggesak.py', eidGenererPythonSkript(gnr, bnr, _bgsaktPeriode));
+    setStep(1, 'done'); setBar(35);
+
+    setStep(2, 'active'); setStatus('Lagar Windows-startar …'); setBar(45);
+    await new Promise(function(r){ setTimeout(r, 150); });
+    zip.file('start.bat', eidGenererBat());
+    setStep(2, 'done'); setBar(60);
+
+    setStep(3, 'active'); setStatus('Lagar macOS-startar …'); setBar(65);
+    await new Promise(function(r){ setTimeout(r, 150); });
+    var cmd = eidGenererCommand();
+    zip.file('start.command', cmd);
+    setStep(3, 'done'); setBar(80);
+
+    setStep(4, 'active'); setStatus('Pakkar ZIP og klargjør nedlasting …'); setBar(90);
+    zip.file('README.md', eidGenererReadme(gnr, bnr, _bgsaktPeriode));
+    await new Promise(function(r){ setTimeout(r, 150); });
+
+    var blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' });
+    var url  = URL.createObjectURL(blob);
+    var a    = document.createElement('a');
+    a.href     = url;
+    a.download = 'Byggesak_' + gnr + '_' + bnr + '_bodo.zip';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 5000);
+
+    setStep(4, 'done'); setBar(100);
+    setStatus('✓ ZIP lasta ned! Pakk ut og dobbeltklikk start.bat');
+
+    setTimeout(function(){ howto.style.display = 'block'; }, 400);
+
+  } catch(e) {
+    setStatus('Feil: ' + e.message);
+    console.error(e);
+  }
+}
+
+/* Vis byggesak-seksjonen når eigedom er valt */
+var _origVisResultat = eidVisResultat;
+eidVisResultat = function() {
+  _origVisResultat();
+  var wrap = document.getElementById('eid-byggesak-wrap');
+  var prop = document.getElementById('eid-bgsak-prop');
+  var badge = document.getElementById('eid-bgsak-knr-badge');
+  if (wrap) wrap.style.display = 'block';
+  if (prop) prop.textContent = 'gnr ' + (_eidData.gnr||'') + ' / bnr ' + (_eidData.bnr||'') + ', ' + (_eidData.poststad||'');
+  if (badge) badge.textContent = (_eidData.kommune||'Bodø') + ' · ' + (_eidData.kommunenr||'1804');
+  // Tilbakestill fremdrift
+  var prog = document.getElementById('eid-bgsak-progress');
+  if (prog) prog.style.display = 'none';
+  var howto = document.getElementById('eid-bgsak-howto');
+  if (howto) howto.style.display = 'none';
+  var bar = document.getElementById('eid-bgsak-bar');
+  if (bar) bar.style.width = '0%';
+  [1,2,3,4].forEach(function(n){
+    var el = document.getElementById('eid-step-'+n);
+    if (el) el.className = 'eid-step';
+  });
+};
+</script>
+
 
 <!-- PRICE PAGE -->
 <div class="page" id="page-price">
@@ -1202,6 +1746,86 @@ window.addEventListener('load',function(){updateDiffLabel();updateRateSumDisplay
     </div>
 
   </div>
+
+    <!-- Byggesaksarkiv -->
+    <div class="eid-byggesak" id="eid-byggesak-wrap" style="display:none">
+      <div class="eid-byggesak-head">
+        <span class="eid-byggesak-title">&#x1F4C1; Byggesaksarkiv &#x2014; Bod&#xF8; Kommune</span>
+        <span class="eid-bgsak-badge" id="eid-bgsak-knr-badge">Bod&#xF8; · 1804</span>
+      </div>
+      <div class="eid-byggesak-body">
+        <p class="eid-bgsak-info">
+          Last ned alle byggesaks&#shy;dokument for <strong id="eid-bgsak-prop">—</strong>
+          fr&#xE5; Bod&#xF8; Kommune si innsynsportal.
+          Verkt&#xF8;yet genererer ein ferdig-konfigurert nedlastingspakke
+          du berre dobbeltklikkar &#x2014; ingen terminal n&#xF8;dvendig.
+        </p>
+
+        <!-- Periode-tabs -->
+        <div class="eid-bgsak-tabs">
+          <button class="eid-bgsak-tab active" onclick="eidBgsaktab(this,'etter')" id="eid-tab-etter">
+            Etter 2017 (Documaster)
+          </button>
+          <button class="eid-bgsak-tab" onclick="eidBgsaktab(this,'foer')" id="eid-tab-foer">
+            F&#xF8;r 2017 (eldre arkiv)
+          </button>
+          <button class="eid-bgsak-tab" onclick="eidBgsaktab(this,'begge')" id="eid-tab-begge">
+            Begge periodar
+          </button>
+        </div>
+
+        <!-- Handlingar -->
+        <div class="eid-bgsak-actions">
+
+          <button class="eid-bgsak-btn primary" onclick="eidLastNedPakke()">
+            <span class="eid-bgsak-btn-icon">&#x2B07;&#xFE0F;</span>
+            <span class="eid-bgsak-btn-txt">
+              <strong>Last ned nedlastingspakke (.zip)</strong>
+              <small>Inneheld ferdig-konfigurert skript + Windows-startar. Dobbeltklikk start.bat</small>
+            </span>
+          </button>
+
+          <button class="eid-bgsak-btn" onclick="eidOpnaInnsynsportal()">
+            <span class="eid-bgsak-btn-icon">&#x1F30D;</span>
+            <span class="eid-bgsak-btn-txt">
+              <strong>Opna i innsynsportalen</strong>
+              <small>Opnar Bod&#xF8; sin innsynsportal med eigedomen f&#xF8;rhandsutfylt</small>
+            </span>
+          </button>
+
+        </div>
+
+        <!-- Fremdriftsindikator (skjult til nedlasting startar) -->
+        <div class="eid-progress" id="eid-bgsak-progress">
+          <div id="eid-bgsak-status">Genererer pakke &#x2026;</div>
+          <div class="eid-progress-bar-wrap">
+            <div class="eid-progress-bar" id="eid-bgsak-bar"></div>
+          </div>
+          <div class="eid-step-list" id="eid-step-list">
+            <div class="eid-step" id="eid-step-1"><div class="eid-step-dot"></div>Konfigurerer skript med gnr/bnr</div>
+            <div class="eid-step" id="eid-step-2"><div class="eid-step-dot"></div>Lagar Windows-startar (start.bat)</div>
+            <div class="eid-step" id="eid-step-3"><div class="eid-step-dot"></div>Lagar macOS-startar (start.command)</div>
+            <div class="eid-step" id="eid-step-4"><div class="eid-step-dot"></div>Pakkar ZIP og klargjer nedlasting</div>
+          </div>
+        </div>
+
+        <!-- Korleis-instruksjonar (vises etter nedlasting) -->
+        <div class="eid-howto" id="eid-bgsak-howto">
+          <strong>Slik brukar du pakken:</strong>
+          <ol>
+            <li>Pakk ut ZIP-fila du nettopp lasta ned</li>
+            <li>Dobbeltklikk <code>start.bat</code> (Windows) eller <code>start.command</code> (Mac)</li>
+            <li>F&#xF8;rste gong: skriptet installerer avhengigheiter automatisk (~2 min)</li>
+            <li>Dokumenta vert lasta ned og lagra i <code>Byggesak_gnr_bnr/</code></li>
+            <li>ZIP-fila vert automatisk oppretta i same mappe</li>
+          </ol>
+          <strong>Krev:</strong> Python 3.9+ installert
+          (<a href="https://www.python.org/downloads/" target="_blank">python.org/downloads</a>)
+        </div>
+
+      </div>
+    </div>
+
   <footer class="page-footer">
     <span>Arkitektverkt&#xF8;y &#xB7; Eigedomsinfo</span>
     <span>Data fr&#xE5; Geonorge, arealplaner.no og Kartverket</span>
