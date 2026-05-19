@@ -1,0 +1,917 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Arkitektverktøy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@500;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#F3F1EC;--surface:#FFFFFF;--border:#E0DAD2;--border-strong:#C5BDB3;
+  --text:#19180F;--text-mid:#5C5950;--text-dim:#98958E;
+  --accent:#2A6E5A;--accent-bg:#EBF3EF;
+  --nav-bg:#141F1B;--nav-text:rgba(255,255,255,.55);--nav-active:#FFFFFF;
+  --pass:#187334;--pass-bg:#EAF5EE;--warn:#7A5200;--warn-bg:#FEF7EC;
+  --fail:#B52C1C;--fail-bg:#FDEEED;
+  --sans:'DM Sans',system-ui,sans-serif;--mono:'DM Mono',monospace;
+  --display:'Syne',system-ui,sans-serif;
+  --r:6px;--r-sm:4px;--r-lg:10px;
+}
+body{font-family:var(--sans);font-size:14px;line-height:1.5;color:var(--text);background:var(--bg);min-height:100vh}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border-strong);border-radius:3px}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.page{display:none}.page.active{display:block;animation:fadeIn .2s ease both}
+.topnav{display:flex;align-items:stretch;padding:0 2rem;background:var(--nav-bg);position:sticky;top:0;z-index:100;box-shadow:0 1px 0 rgba(255,255,255,.06);height:52px;}
+.nav-brand{font-family:var(--display);font-weight:700;font-size:13px;color:#fff;letter-spacing:.12em;text-transform:uppercase;display:flex;align-items:center;margin-right:2.5rem;padding-right:2.5rem;border-right:1px solid rgba(255,255,255,.1);white-space:nowrap;}
+.nav-tabs{display:flex;align-items:stretch}
+.nav-tab{background:none;border:none;border-bottom:2px solid transparent;cursor:pointer;padding:0 1.1rem;font-family:var(--sans);font-size:13px;font-weight:500;color:var(--nav-text);height:52px;transition:color .15s,border-color .15s;}
+.nav-tab:hover{color:rgba(255,255,255,.8)}.nav-tab.active{color:var(--nav-active);border-bottom-color:#4DB890}
+.nav-ver{margin-left:auto;display:flex;align-items:center;font-family:var(--mono);font-size:11px;color:rgba(255,255,255,.28);letter-spacing:.04em;}
+.container{max-width:920px;margin:0 auto;padding:3rem 2rem 4rem}.container.narrow{max-width:880px;padding:2rem 1.5rem 4rem}
+.hero{margin-bottom:2.75rem;animation:fadeUp .25s ease both}
+.hero-tag{font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.75rem;}
+.hero-title{font-family:var(--display);font-weight:700;font-size:38px;line-height:1.1;letter-spacing:-.02em;margin-bottom:1rem;}
+.hero-sub{font-size:15px;color:var(--text-mid);max-width:520px;line-height:1.7}
+.tools-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:16px;margin-bottom:2rem;}
+.tool-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r-lg);padding:1.25rem;cursor:default;transition:border-color .18s,box-shadow .18s,transform .18s;display:flex;flex-direction:column;gap:.75rem;animation:fadeUp .22s ease both;}
+.tool-card:nth-child(1){animation-delay:.05s}.tool-card:nth-child(2){animation-delay:.10s}.tool-card:nth-child(3){animation-delay:.15s}
+.tool-card:nth-child(4){animation-delay:.20s}.tool-card:nth-child(5){animation-delay:.25s}.tool-card:nth-child(6){animation-delay:.30s}
+.tool-card.is-active{cursor:pointer}.tool-card.is-active:hover{box-shadow:0 6px 22px rgba(42,110,90,.12);transform:translateY(-1px)}
+.card-top{display:flex;align-items:flex-start;justify-content:space-between}
+.card-icon{width:40px;height:40px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;}
+.card-tag{font-size:11px;font-family:var(--mono);font-weight:500;padding:3px 9px;border-radius:20px;letter-spacing:.03em;}
+.card-label{font-family:var(--display);font-weight:600;font-size:15px;margin-bottom:4px}
+.card-desc{font-size:12.5px;color:var(--text-mid);line-height:1.6}
+.card-cta{margin-top:auto;font-size:12px;font-weight:500;color:var(--text-dim);transition:color .15s}
+.tool-card.is-active:hover .card-cta{color:var(--accent)}
+.info-strip{padding:1.25rem 1.5rem;border:1.5px solid var(--border);border-radius:var(--r-lg);display:flex;align-items:center;gap:1rem;background:var(--surface);animation:fadeUp .22s .22s ease both;opacity:0;animation-fill-mode:both;}
+.strip-icon{width:36px;height:36px;border-radius:8px;background:var(--accent-bg);display:flex;align-items:center;justify-content:center;font-size:17px;color:var(--accent);flex-shrink:0;}
+.strip-title{font-weight:500;font-size:13px;margin-bottom:2px}.strip-sub{font-size:12px;color:var(--text-mid);line-height:1.5}
+.page-head{margin-bottom:1.5rem;animation:fadeUp .22s ease both}
+.page-tag{font-family:var(--mono);font-size:11px;color:var(--accent);letter-spacing:.1em;text-transform:uppercase;margin-bottom:.4rem;}
+.page-title{font-family:var(--display);font-weight:700;font-size:26px;letter-spacing:-.015em;margin-bottom:4px}
+.page-sub{font-size:13px;color:var(--text-mid)}
+.sys-tabs{display:inline-flex;border:1.5px solid var(--border-strong);border-radius:var(--r);overflow:hidden;margin-bottom:1.25rem;animation:fadeUp .22s .05s ease both;opacity:0;animation-fill-mode:both;}
+.sys-tab{padding:.5rem 1.25rem;border:none;cursor:pointer;font-family:var(--sans);font-size:13px;font-weight:500;background:var(--surface);color:var(--text-mid);transition:background .15s,color .15s;}
+.sys-tab+.sys-tab{border-left:1.5px solid var(--border-strong)}.sys-tab.active{background:var(--nav-bg);color:#fff}
+.sys-tab:not(.active):hover{background:var(--accent-bg);color:var(--accent)}
+.main-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r-lg);overflow:hidden;animation:fadeUp .22s .1s ease both;opacity:0;animation-fill-mode:both;}
+.sec-head{padding:.75rem 1.25rem .5rem;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim);border-bottom:1px solid var(--border);}
+.sec-div{border:none;border-top:1.5px solid var(--border)}
+.pickers{display:grid;grid-template-columns:1fr 1fr}.picker-col{padding:1.25rem}.picker-col+.picker-col{border-left:1.5px solid var(--border)}
+.picker-label{font-size:12px;font-weight:600;color:var(--text-mid);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.5rem;}
+.search-input{width:100%;padding:.5rem .7rem;margin-bottom:.5rem;font-family:var(--mono);font-size:13px;border:1.5px solid var(--border-strong);border-radius:var(--r-sm);background:var(--bg);color:var(--text);outline:none;transition:border-color .12s,background .12s;}
+.search-input:focus{border-color:var(--accent);background:var(--surface)}.search-input::placeholder{color:var(--text-dim)}
+.color-list{height:224px;overflow-y:auto;border:1.5px solid var(--border);border-radius:var(--r-sm);background:var(--surface);}
+.list-count{position:sticky;top:0;z-index:2;padding:.3rem .7rem;font-size:11px;color:var(--text-dim);background:var(--surface);border-bottom:1px solid var(--border);}
+.ci{display:flex;align-items:center;gap:10px;padding:.45rem .7rem;cursor:pointer;border-bottom:1px solid var(--border);transition:background .08s;}
+.ci:hover{background:var(--accent-bg)}.ci.selected{background:var(--accent-bg);outline:2px solid var(--accent);outline-offset:-2px;position:relative;z-index:1}
+.ci-sw{width:22px;height:22px;border-radius:3px;border:1px solid rgba(0,0,0,.1);flex-shrink:0}
+.ci-txt{min-width:0}.ci-code{font-family:var(--mono);font-size:12px;font-weight:500;white-space:nowrap}
+.ci-name{font-size:11.5px;color:var(--text-mid);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sel-strip{margin-top:.6rem;display:flex;align-items:center;gap:.75rem;padding:.6rem .75rem;border:1.5px solid var(--border);border-radius:var(--r-sm);background:var(--bg);min-height:54px;}
+.sel-swatch{width:38px;height:38px;border-radius:var(--r-sm);border:1px solid rgba(0,0,0,.12);flex-shrink:0;background:var(--border);transition:background .25s;}
+.sel-code{font-family:var(--mono);font-size:13px;font-weight:500}.sel-name{font-size:12px;color:var(--text-mid)}.sel-hex{font-family:var(--mono);font-size:11px;color:var(--text-dim)}
+.preview-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:1.25rem}
+.preview-block{padding:1.25rem 1rem;border-radius:var(--r);border:1px solid rgba(0,0,0,.06);min-height:80px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:4px;transition:background .3s,color .3s;}
+.pb-sample{font-size:15px;font-weight:500;line-height:1.3}.pb-label{font-size:11px;opacity:.65}
+.results-pad{padding:1.25rem}
+.ratio-row{display:flex;align-items:center;gap:1rem;background:var(--bg);border-radius:var(--r);padding:1rem 1.25rem;margin-bottom:1rem;}
+.ratio-num{font-family:var(--display);font-weight:700;font-size:42px;line-height:1;min-width:85px;letter-spacing:-.02em;color:var(--text-dim);transition:color .25s;}
+.ratio-denom{font-family:var(--display);font-size:22px;color:var(--border-strong);line-height:1}
+.ratio-label{font-size:13px;color:var(--text-mid);line-height:1.5}.ratio-label strong{display:block;font-size:14px;color:var(--text);margin-bottom:2px}
+.pair-info{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:12px;color:var(--text-mid);margin-bottom:.75rem;}
+.pair-dot{width:12px;height:12px;border-radius:2px;border:1px solid rgba(0,0,0,.1);flex-shrink:0}
+.wcag-table{width:100%;border:1.5px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:1rem;}
+.wcag-head{display:grid;grid-template-columns:72px 1fr 100px 95px;padding:.5rem .75rem;background:var(--bg);border-bottom:1px solid var(--border);font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--text-dim);}
+.wcag-row{display:grid;grid-template-columns:72px 1fr 100px 95px;padding:.6rem .75rem;border-bottom:1px solid var(--border);align-items:center;font-size:13px;transition:background .1s;}
+.wcag-row:last-child{border-bottom:none}.wcag-row:hover{background:var(--bg)}
+.w-level{font-family:var(--mono);font-size:12px;font-weight:500}.w-desc{color:var(--text-mid)}.w-req{font-family:var(--mono);font-size:12px;color:var(--text-dim)}
+.badge{display:inline-flex;align-items:center;gap:3px;font-size:12px;font-weight:500;padding:2px 8px;border-radius:20px;}
+.badge-pass{background:var(--pass-bg);color:var(--pass)}.badge-fail{background:var(--fail-bg);color:var(--fail)}.badge-empty{background:var(--bg);color:var(--text-dim)}
+.ctx-note{padding:.85rem 1rem;border-left:3px solid var(--border-strong);border-radius:0 var(--r) var(--r) 0;font-size:13px;line-height:1.6;color:var(--text-mid);background:var(--bg);}
+.ctx-note.pass{border-color:var(--pass);background:var(--pass-bg);color:#174d28}.ctx-note.pass strong{color:#0f3318}
+.ctx-note.warn{border-color:var(--warn);background:var(--warn-bg);color:var(--warn)}.ctx-note.warn strong{color:#5a3c00}
+.ctx-note.fail{border-color:var(--fail);background:var(--fail-bg);color:#7a1f12}.ctx-note.fail strong{color:#4a0f08}
+.tek-intro{padding:.75rem 1rem;background:#FEF7EC;border:1px solid #F0D080;border-radius:var(--r);font-size:13px;line-height:1.6;color:#5A4200;margin-bottom:1rem;}
+.lum-bar-wrap{margin-bottom:1rem}
+.lum-bar-labels{display:flex;justify-content:space-between;font-family:var(--mono);font-size:11px;color:var(--text-dim);margin-bottom:4px;}
+.lum-bar-track{height:12px;background:linear-gradient(to right,#111,#fff);border-radius:6px;position:relative;border:1px solid var(--border);}
+.lum-marker{position:absolute;top:-5px;width:4px;height:22px;border-radius:2px;transform:translateX(-50%);box-shadow:0 1px 3px rgba(0,0,0,.3);transition:left .35s ease;}
+.lum-legend{display:flex;gap:1.5rem;margin-top:6px;font-size:12px;color:var(--text-mid)}.lum-legend span{display:flex;align-items:center;gap:5px}
+.leg-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
+.delta-row{display:flex;align-items:center;gap:1rem;background:var(--bg);border-radius:var(--r);padding:1rem 1.25rem;margin-bottom:1rem;}
+.delta-val{font-family:var(--display);font-weight:700;font-size:38px;line-height:1;min-width:85px;letter-spacing:-.02em;color:var(--text-dim);transition:color .25s;}
+.delta-lbl{font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim);margin-bottom:3px;}
+.delta-thresh{font-size:13px;color:var(--text-mid)}
+.tek-table{width:100%;border:1.5px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:1rem;}
+.tek-head{display:grid;grid-template-columns:110px 1fr 95px;padding:.5rem .75rem;background:var(--bg);border-bottom:1px solid var(--border);font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--text-dim);}
+.tek-row{display:grid;grid-template-columns:110px 1fr 95px;padding:.6rem .75rem;border-bottom:1px solid var(--border);align-items:center;font-size:13px;transition:background .1s;}
+.tek-row:last-child{border-bottom:none}.tek-row:hover{background:var(--bg)}.t-par{font-family:var(--mono);font-size:11px;color:var(--text-dim)}.t-elem{color:var(--text-mid)}
+.page-footer{max-width:920px;margin:0 auto;padding:.75rem 2rem;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:11px;color:var(--text-dim);}
+.price-layout{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;align-items:start}
+.form-card,.result-card{background:var(--surface);border:1.5px solid var(--border);border-radius:var(--r-lg);overflow:hidden;animation:fadeUp .22s .1s ease both;opacity:0;animation-fill-mode:both;}
+.result-card{animation-delay:.18s}
+.form-section{padding:1.1rem 1.25rem;border-bottom:1px solid var(--border)}.form-section:last-child{border-bottom:none}
+.form-label{display:block;font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--text-dim);margin-bottom:.6rem;}
+.form-label span{font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-mid)}
+.radio-group{display:flex;gap:8px;flex-wrap:wrap}.radio-pill input{display:none}
+.radio-pill label{display:inline-block;padding:.45rem .9rem;border:1.5px solid var(--border-strong);border-radius:20px;font-size:12.5px;cursor:pointer;color:var(--text-mid);transition:all .12s;white-space:nowrap;}
+.radio-pill input:checked+label{background:var(--nav-bg);color:#fff;border-color:var(--nav-bg);}
+.radio-pill label:hover{border-color:var(--accent);color:var(--accent)}
+.type-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.type-btn{background:var(--bg);border:1.5px solid var(--border);border-radius:var(--r);padding:.55rem .75rem;font-family:var(--sans);font-size:12.5px;color:var(--text-mid);cursor:pointer;text-align:left;transition:all .12s;}
+.type-btn:hover{border-color:var(--accent);color:var(--accent);background:var(--accent-bg)}.type-btn.active{background:var(--nav-bg);color:#fff;border-color:var(--nav-bg)}
+.num-input-wrap{display:flex;align-items:center;gap:10px}
+.num-input{flex:1;padding:.55rem .8rem;font-family:var(--mono);font-size:14px;border:1.5px solid var(--border-strong);border-radius:var(--r-sm);background:var(--bg);color:var(--text);outline:none;transition:border-color .12s,background .12s;}
+.num-input:focus{border-color:var(--accent);background:var(--surface)}
+.unit-toggle{display:inline-flex;border:1.5px solid var(--border-strong);border-radius:var(--r-sm);overflow:hidden;flex-shrink:0;}
+.unit-btn{padding:.45rem .75rem;border:none;cursor:pointer;font-family:var(--mono);font-size:12px;font-weight:500;background:var(--surface);color:var(--text-mid);transition:all .12s;}
+.unit-btn+.unit-btn{border-left:1.5px solid var(--border-strong)}.unit-btn.active{background:var(--nav-bg);color:#fff}
+.slider-wrap{padding:.4rem 0 .2rem}.slider-track{display:flex;align-items:center;gap:12px}
+.range-input{flex:1;-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;background:var(--border-strong);outline:none;}
+.range-input::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:var(--nav-bg);cursor:pointer;border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.25);}
+.range-val{font-family:var(--display);font-weight:700;font-size:18px;color:var(--accent);min-width:28px;text-align:right;}
+.range-labels{display:flex;justify-content:space-between;font-size:11px;color:var(--text-dim);margin-top:4px;font-family:var(--mono)}
+.phase-list{display:flex;flex-direction:column;gap:6px}
+.phase-item{display:flex;align-items:center;gap:10px;padding:.5rem .75rem;border:1.5px solid var(--border);border-radius:var(--r-sm);cursor:pointer;transition:all .12s;}
+.phase-item:hover{border-color:var(--accent);background:var(--accent-bg)}.phase-item.checked{border-color:var(--accent);background:var(--accent-bg)}
+.phase-item input[type=checkbox]{width:15px;height:15px;cursor:pointer;accent-color:var(--accent);flex-shrink:0;}
+.phase-name{font-size:13px;flex:1}.phase-pct{font-family:var(--mono);font-size:11px;color:var(--text-dim)}
+.calc-btn{width:100%;padding:.85rem 1rem;margin-top:.5rem;background:var(--nav-bg);color:#fff;border:none;border-radius:var(--r);font-family:var(--display);font-size:14px;font-weight:600;cursor:pointer;letter-spacing:.02em;transition:background .15s,transform .1s;}
+.calc-btn:hover{background:#1e2e28;transform:translateY(-1px)}.calc-btn:active{transform:translateY(0)}
+.res-empty{padding:3rem 1.5rem;text-align:center;color:var(--text-dim);font-size:13px;line-height:1.7;}
+.res-empty-icon{font-size:32px;margin-bottom:.75rem;opacity:.4}
+.res-section{padding:1.1rem 1.25rem;border-bottom:1px solid var(--border)}.res-section:last-child{border-bottom:none}
+.res-kv{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:.35rem}.res-kv:last-child{margin-bottom:0}
+.res-key{font-size:12.5px;color:var(--text-mid)}.res-val{font-family:var(--mono);font-size:13px;font-weight:500;color:var(--text)}
+.phase-result-row{display:grid;grid-template-columns:1fr auto auto;gap:.5rem 1rem;align-items:center;padding:.55rem .75rem;border-bottom:1px solid var(--border);font-size:13px;}
+.phase-result-row:first-child{font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--text-dim);padding-bottom:.4rem;background:var(--bg);}
+.phase-result-row:last-child{border-bottom:none}
+.pr-name{color:var(--text-mid)}.pr-pct{font-family:var(--mono);font-size:12px;color:var(--text-dim);white-space:nowrap}
+.pr-fee{font-family:var(--mono);font-size:12px;font-weight:500;white-space:nowrap;text-align:right}.pr-fee.total-row{color:var(--accent);font-weight:700}
+.total-row{background:var(--accent-bg)}.total-row .pr-name{font-weight:600;color:var(--accent)}
+.afag-note{padding:.8rem 1rem;background:#FEF7EC;border:1px solid #F0D080;border-radius:var(--r);font-size:12px;line-height:1.6;color:#5A4200;margin-top:.75rem;}
+@media(max-width:700px){.price-layout{grid-template-columns:1fr}.type-grid{grid-template-columns:1fr 1fr}}
+.rate-row{display:grid;grid-template-columns:1fr 130px 90px;gap:8px;align-items:center;margin-bottom:10px;}
+.rate-row:last-child{margin-bottom:0}
+.rate-label-inp{padding:.5rem .7rem;font-family:var(--sans);font-size:13px;border:1.5px solid var(--border-strong);border-radius:var(--r-sm);background:var(--bg);color:var(--text);outline:none;width:100%;transition:border-color .12s,background .12s;}
+.rate-label-inp:focus{border-color:var(--accent);background:var(--surface)}
+.rate-kr-wrap{position:relative}.rate-kr-wrap input{width:100%;padding:.5rem 2.2rem .5rem .7rem;font-family:var(--mono);font-size:13px;border:1.5px solid var(--border-strong);border-radius:var(--r-sm);background:var(--bg);color:var(--text);outline:none;transition:border-color .12s,background .12s;}
+.rate-kr-wrap input:focus{border-color:var(--accent);background:var(--surface)}
+.rate-kr-wrap::after{content:'kr/t';position:absolute;right:.6rem;top:50%;transform:translateY(-50%);font-family:var(--mono);font-size:11px;color:var(--text-dim);pointer-events:none;}
+.rate-pct-wrap{display:flex;align-items:center;gap:6px}
+.rate-pct-inp{width:54px;padding:.5rem .4rem;text-align:center;font-family:var(--mono);font-size:13px;font-weight:500;border:1.5px solid var(--border-strong);border-radius:var(--r-sm);background:var(--bg);color:var(--text);outline:none;transition:border-color .12s,background .12s;}
+.rate-pct-inp:focus{border-color:var(--accent);background:var(--surface)}.pct-symbol{font-size:12px;color:var(--text-dim);font-family:var(--mono)}
+.rate-sum-row{display:flex;justify-content:flex-end;align-items:center;gap:8px;margin-top:8px;font-size:12px;}
+.rate-sum-ok{color:var(--pass);font-family:var(--mono);font-weight:500}.rate-sum-err{color:var(--fail);font-family:var(--mono);font-weight:500}.rate-sum-label{color:var(--text-dim)}
+.add-rate-btn{background:none;border:1.5px dashed var(--border-strong);border-radius:var(--r-sm);padding:.45rem .8rem;font-family:var(--sans);font-size:12px;color:var(--text-dim);cursor:pointer;width:100%;margin-top:8px;transition:all .12s;}
+.add-rate-btn:hover{border-color:var(--accent);color:var(--accent)}
+.remove-rate-btn{background:none;border:none;cursor:pointer;color:var(--text-dim);font-size:16px;line-height:1;padding:2px 4px;border-radius:3px;transition:color .1s;}
+.remove-rate-btn:hover{color:var(--fail)}
+.hours-big{font-family:var(--display);font-weight:700;font-size:28px;letter-spacing:-.02em;color:var(--text);}
+.hours-unit{font-size:13px;color:var(--text-dim);margin-left:4px}.rate-result-table{width:100%}
+.rrt-head{display:grid;grid-template-columns:1fr 70px 80px 90px;padding:.45rem .75rem;background:var(--bg);border-bottom:1px solid var(--border);font-size:11px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--text-dim);}
+.rrt-row{display:grid;grid-template-columns:1fr 70px 80px 90px;padding:.55rem .75rem;border-bottom:1px solid var(--border);align-items:center;font-size:13px;}
+.rrt-row:last-child{border-bottom:none}.rrt-row.total-row{background:var(--accent-bg)}
+.rrt-name{color:var(--text-mid)}.rrt-pct{font-family:var(--mono);font-size:12px;color:var(--text-dim)}.rrt-hours{font-family:var(--mono);font-size:12px;color:var(--text)}
+.rrt-fee{font-family:var(--mono);font-size:12px;font-weight:500;text-align:right}.rrt-fee.accent{color:var(--accent);font-weight:700;font-size:13px}
+.weighted-rate-note{font-size:12px;color:var(--text-mid);margin-top:6px;display:flex;justify-content:space-between;}.weighted-rate-note strong{font-family:var(--mono);color:var(--text)}
+
+/* ── EIGEDOMSINFO ──────────────────────────────────────────────── */
+#page-eigedomsinfo{height:calc(100vh - 52px);display:none;flex-direction:column}
+#page-eigedomsinfo.active{display:flex;animation:fadeIn .2s ease both}
+.eiendom-wrap{display:flex;flex-direction:column;flex:1;overflow:hidden}
+.eiendom-toolbar{display:flex;align-items:center;gap:10px;padding:10px 20px;background:var(--surface);border-bottom:1.5px solid var(--border);flex-shrink:0;}
+.eiendom-brand{font-family:var(--display);font-size:13px;font-weight:700;color:var(--text);letter-spacing:.02em;}
+.eiendom-status{font-size:12px;color:var(--text-dim);display:flex;align-items:center;gap:7px;margin-left:14px;}
+.eiendom-dot{width:7px;height:7px;border-radius:50%;background:var(--border-strong);flex-shrink:0;transition:background .3s;}
+.eiendom-dot.online{background:#16a34a}.eiendom-dot.offline{background:var(--fail)}
+@keyframes dotblink{0%,100%{opacity:1}50%{opacity:.25}}
+.eiendom-dot.checking{background:var(--warn);animation:dotblink .9s ease-in-out infinite}
+.eiendom-url{font-family:var(--mono);font-size:11px;color:var(--text-dim);background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);padding:3px 9px;margin-left:auto;}
+.eiendom-btn{font-size:12px;padding:5px 13px;border-radius:var(--r-sm);border:1.5px solid var(--border);background:transparent;cursor:pointer;color:var(--text-mid);font-family:var(--sans);transition:.15s;}
+.eiendom-btn:hover{background:var(--accent-bg);border-color:var(--accent);color:var(--accent)}
+.eiendom-frame{flex:1;border:none;width:100%;background:var(--bg)}
+.eiendom-offline{display:none;flex-direction:column;align-items:center;justify-content:center;gap:18px;flex:1;text-align:center;padding:52px 28px;background:var(--bg);}
+.eiendom-offline-icon{font-size:2.8rem;opacity:.4;line-height:1}
+.eiendom-offline h3{font-family:var(--display);font-size:1.15rem;color:var(--text-mid)}
+.eiendom-offline p{font-size:.88rem;color:var(--text-dim);max-width:380px;line-height:1.75}
+.eiendom-offline code{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:2px 8px;font-family:var(--mono);font-size:.82rem;color:var(--accent);}
+.eiendom-cmd{background:var(--nav-bg);color:#4DB890;font-family:var(--mono);font-size:.88rem;padding:11px 22px;border-radius:var(--r);border:1px solid rgba(255,255,255,.06);letter-spacing:.02em;}
+</style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="nav-brand">Arkitektverktøy</div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="switchPage('dashboard')">Dashboard</button>
+    <button class="nav-tab" onclick="switchPage('contrast')">Fargekontast</button>
+    <button class="nav-tab" onclick="switchPage('price')">Priskalkulator</button>
+    <button class="nav-tab" onclick="switchPage('eigedomsinfo')">&#x1F5FA; Eigedomsinfo</button>
+  </div>
+  <div class="nav-ver">v 0.2</div>
+</nav>
+
+<!-- DASHBOARD -->
+<div class="page active" id="page-dashboard">
+  <div class="container">
+    <div class="hero">
+      <div class="hero-tag">Arkitektverkt&#xF8;y &#x2014; 2026</div>
+      <h1 class="hero-title">Raske verkt&#xF8;y<br/>for arkitektkvardag&shy;en.</h1>
+      <p class="hero-sub">Ein samla plass for kalkulatorar og sjekklistar &#x2014; bygd for presisjon og dagleg bruk. Vel eit verkt&#xF8;y nedanfor.</p>
+    </div>
+    <div class="tools-grid">
+      <div class="tool-card is-active" onclick="switchPage('contrast')">
+        <div class="card-top"><div class="card-icon" style="background:#EBF3EF;color:#2A6E5A">&#x25D0;</div><span class="card-tag" style="background:#EBF3EF;color:#2A6E5A">Tilgjengeleg</span></div>
+        <div><div class="card-label">Fargekontast</div><p class="card-desc">Sjekk WCAG 2.1-kontrastforhold og TEK17 &#xA7;12-16 (&#x394;L &#x2265; 0,40) for RAL Classic og NCS-fargar.</p></div>
+        <div class="card-cta">Opne verkt&#xF8;y &#x2192;</div>
+      </div>
+      <div class="tool-card">
+        <div class="card-top"><div class="card-icon" style="background:#EEF0F8;color:#4A6EA8">&#x229E;</div><span class="card-tag" style="background:#F4F4F4;color:#98958E">Kjem snart</span></div>
+        <div><div class="card-label">Arealkalulator</div><p class="card-desc">Rekn ut nettoareal, bruttoareal og parkeringsnorm etter gjeldande planf&#xF8;resegner.</p></div>
+      </div>
+      <div class="tool-card">
+        <div class="card-top"><div class="card-icon" style="background:#FEF7EC;color:#8A6200">&#x224B;</div><span class="card-tag" style="background:#F4F4F4;color:#98958E">Kjem snart</span></div>
+        <div><div class="card-label">U-verdi kalkulator</div><p class="card-desc">Vurder varmetap og energikrav i veggar, tak og golv etter TEK17 &#xA7;14.</p></div>
+      </div>
+      <div class="tool-card is-active" onclick="switchPage('price')">
+        <div class="card-top"><div class="card-icon" style="background:#EEF0F8;color:#3A5FA6">&#x20A3;</div><span class="card-tag" style="background:#EBF3EF;color:#2A6E5A">Tilgjengeleg</span></div>
+        <div><div class="card-label">Priskalkulator</div><p class="card-desc">Estim&#xE9;r arkitekthonorar for ulike prosjekttypar, fasar og kompleksitetsniv&#xE5; basert p&#xE5; AFAG-erfaringstal.</p></div>
+        <div class="card-cta">Opne verkt&#xF8;y &#x2192;</div>
+      </div>
+      <div class="tool-card">
+        <div class="card-top"><div class="card-icon" style="background:#F5EEF8;color:#7A3A8A">&#x25CC;</div><span class="card-tag" style="background:#F4F4F4;color:#98958E">Kjem snart</span></div>
+        <div><div class="card-label">Dagslysfaktor</div><p class="card-desc">Estim&#xE9;r dagslysfaktor og kontroller krav til naturleg lys i bustader og arbeidsrom.</p></div>
+      </div>
+      <div class="tool-card is-active" onclick="switchPage('eigedomsinfo')">
+        <div class="card-top"><div class="card-icon" style="background:#EBF3EF;color:#2A6E5A">&#x1F5FA;</div><span class="card-tag" style="background:#EBF3EF;color:#2A6E5A">Tilgjengeleg</span></div>
+        <div><div class="card-label">Eigedomsinfo</div><p class="card-desc">Hentar reg.plan, kommuneplan, dispensasjonar og situasjonsplan 1:500 automatisk for valfri norsk eigedom.</p></div>
+        <div class="card-cta">Opne verkt&#xF8;y &#x2192;</div>
+      </div>
+    </div>
+    <div class="info-strip">
+      <div class="strip-icon">&#x2139;</div>
+      <div>
+        <div class="strip-title">Basert p&#xE5; norsk regelverk</div>
+        <p class="strip-sub">Alle verkt&#xF8;y er tilpassa gjeldande TEK17, NS-EN-standardar og WCAG 2.1. RGB-verdiar er tilnærma referanseverdiar &#x2014; bruk alltid godkjend fargepr&#xF8;ve til endeleg val.</p>
+      </div>
+    </div>
+  </div>
+  <footer class="page-footer"><span>Arkitektverkt&#xF8;y &#xB7; 2026</span><span>RGB-verdiar er tilnærma referanseverdiar</span></footer>
+</div>
+
+<!-- CONTRAST PAGE -->
+<div class="page" id="page-contrast">
+  <div class="container narrow">
+    <div class="page-head"><div class="page-tag">Verkt&#xF8;y 001</div><h2 class="page-title">Fargekontast</h2><p class="page-sub">WCAG 2.1-kontrastforhold og TEK17 &#xA7;12-16 &#x2014; RAL Classic og NCS</p></div>
+    <div class="sys-tabs"><button class="sys-tab active" onclick="switchSystem('RAL')">RAL Classic</button><button class="sys-tab" onclick="switchSystem('NCS')">NCS</button></div>
+    <div class="main-card">
+      <div class="sec-head">Vel to fargar</div>
+      <div class="pickers">
+        <div class="picker-col">
+          <div class="picker-label">Farge A</div>
+          <input class="search-input" type="text" id="searchA" placeholder="S&#xF8;k kode eller namn&#x2026;" oninput="filterList('A')"/>
+          <div class="color-list"><div class="list-count" id="countA"></div><div id="innerA"></div></div>
+          <div class="sel-strip"><div class="sel-swatch" id="swA"></div><div><div class="sel-code" id="pcA">&#x2014;</div><div class="sel-name" id="pnA">Ingen valt</div><div class="sel-hex" id="phA"></div></div></div>
+        </div>
+        <div class="picker-col">
+          <div class="picker-label">Farge B</div>
+          <input class="search-input" type="text" id="searchB" placeholder="S&#xF8;k kode eller namn&#x2026;" oninput="filterList('B')"/>
+          <div class="color-list"><div class="list-count" id="countB"></div><div id="innerB"></div></div>
+          <div class="sel-strip"><div class="sel-swatch" id="swB"></div><div><div class="sel-code" id="pcB">&#x2014;</div><div class="sel-name" id="pnB">Ingen valt</div><div class="sel-hex" id="phB"></div></div></div>
+        </div>
+      </div>
+      <hr class="sec-div"/>
+      <div class="sec-head">Visuell f&#xF8;rehandsvising</div>
+      <div class="preview-grid">
+        <div class="preview-block" id="demoAB"><div class="pb-sample">Tekst A p&#xE5; B</div><div class="pb-label">A over B</div></div>
+        <div class="preview-block" id="demoBA"><div class="pb-sample">Tekst B p&#xE5; A</div><div class="pb-label">B over A</div></div>
+      </div>
+      <hr class="sec-div"/>
+      <div class="sec-head">WCAG 2.1 &#x2014; Kontrastforhold</div>
+      <div class="results-pad">
+        <div class="ratio-row"><div class="ratio-num" id="ratioNum">&#x2014;</div><div class="ratio-denom">: 1</div><div class="ratio-label"><strong>Kontrastforhold</strong>H&#xF8;gare er betre. Minstekrav AA: 4,5:1 (normal tekst)</div></div>
+        <div class="pair-info" id="pairInfo"><span style="color:var(--text-dim)">Vel to fargar for &#xE5; rekne ut kontrast</span></div>
+        <div class="wcag-table">
+          <div class="wcag-head"><span>Niv&#xE5;</span><span>Bruksomr&#xE5;de</span><span>Krav</span><span>Status</span></div>
+          <div id="wcagRows">
+            <div class="wcag-row"><span class="w-level">AA</span><span class="w-desc">Normal tekst (&lt; 18pt)</span><span class="w-req">&#x2265; 4,5 : 1</span><span class="badge badge-empty">&#x2014;</span></div>
+            <div class="wcag-row"><span class="w-level">AA</span><span class="w-desc">Stor tekst (18pt+ / 14pt fet)</span><span class="w-req">&#x2265; 3,0 : 1</span><span class="badge badge-empty">&#x2014;</span></div>
+            <div class="wcag-row"><span class="w-level">AAA</span><span class="w-desc">Normal tekst (&lt; 18pt)</span><span class="w-req">&#x2265; 7,0 : 1</span><span class="badge badge-empty">&#x2014;</span></div>
+            <div class="wcag-row"><span class="w-level">AAA</span><span class="w-desc">Stor tekst (18pt+ / 14pt fet)</span><span class="w-req">&#x2265; 4,5 : 1</span><span class="badge badge-empty">&#x2014;</span></div>
+          </div>
+        </div>
+        <div class="ctx-note" id="wcagNote">Vel to fargar fr&#xE5; listene over for &#xE5; rekne ut WCAG-kontrastforhold.</div>
+      </div>
+      <hr class="sec-div"/>
+      <div class="sec-head">TEK17 &#xA7;12-16 &#x2014; Universell utforming</div>
+      <div class="results-pad">
+        <div class="tek-intro"><strong>Metode:</strong> TEK17 nyttar <em>differanse i relativ luminans</em> (&#x394;L) mellom to tilgrensande flater. Kravet er <strong>&#x394;L &#x2265; 0,40</strong>. Luminansverdiane er rekna etter WCAG-formelen (0 = svart, 1 = kvit).</div>
+        <div class="lum-bar-wrap">
+          <div class="lum-bar-labels"><span>Svart &#x2014; L = 0</span><span>Kvit &#x2014; L = 1</span></div>
+          <div class="lum-bar-track"><div class="lum-marker" id="markerA" style="left:10%;background:#B52C1C"></div><div class="lum-marker" id="markerB" style="left:90%;background:#2A6E5A"></div></div>
+          <div class="lum-legend"><span><span class="leg-dot" style="background:#B52C1C"></span>Farge A: <strong id="lumAval" style="font-family:var(--mono)">&#x2014;</strong></span><span><span class="leg-dot" style="background:#2A6E5A"></span>Farge B: <strong id="lumBval" style="font-family:var(--mono)">&#x2014;</strong></span></div>
+        </div>
+        <div class="delta-row"><div class="delta-val" id="deltaVal">&#x2014;</div><div><div class="delta-lbl">Differanse i relativ luminans &#x2014; &#x394;L</div><div class="delta-thresh" id="deltaThresh">Vel to fargar for &#xE5; sj&#xE5; &#x394;L</div></div></div>
+        <div class="tek-table">
+          <div class="tek-head"><span>Paragraf</span><span>Bygningselement</span><span>Status</span></div>
+          <div id="tekRows">
+            <div class="tek-row"><span class="t-par">&#xA7;12-16 (1)</span><span class="t-elem">Hovudinngangsd&#xF8;r / d&#xF8;rblad mot karm</span><span class="badge badge-empty">&#x2014;</span></div>
+            <div class="tek-row"><span class="t-par">&#xA7;12-16 (1)</span><span class="t-elem">Trappeforkant / neseliste mot trinn</span><span class="badge badge-empty">&#x2014;</span></div>
+            <div class="tek-row"><span class="t-par">&#xA7;12-16 (1)</span><span class="t-elem">Handlist / rekkverk mot bakgrunn</span><span class="badge badge-empty">&#x2014;</span></div>
+            <div class="tek-row"><span class="t-par">&#xA7;12-16 (1)</span><span class="t-elem">D&#xF8;rkarmar og vindaugskarmar mot vegg</span><span class="badge badge-empty">&#x2014;</span></div>
+            <div class="tek-row"><span class="t-par">&#xA7;12-16 (2)</span><span class="t-elem">Informasjonsskilt &#x2014; tekst mot bakgrunn</span><span class="badge badge-empty">&#x2014;</span></div>
+            <div class="tek-row"><span class="t-par">&#xA7;12-16 (2)</span><span class="t-elem">Betjeningspanel / knapp mot omgjevnad</span><span class="badge badge-empty">&#x2014;</span></div>
+            <div class="tek-row"><span class="t-par">&#xA7;12-16 (1)</span><span class="t-elem">Golv / vegg-overgang ved soneskifte</span><span class="badge badge-empty">&#x2014;</span></div>
+            <div class="tek-row"><span class="t-par">&#xA7;12-16 (3)</span><span class="t-elem">Ledelinje / varselmarkering mot golv</span><span class="badge badge-empty">&#x2014;</span></div>
+          </div>
+        </div>
+        <div class="ctx-note" id="tekNote">Vel to fargar fr&#xE5; listene over for &#xE5; vurdere TEK17-krav.</div>
+      </div>
+    </div>
+  </div>
+  <footer class="page-footer"><span>Arkitektverkt&#xF8;y &#xB7; Fargekontast</span><span>RGB-verdiar er tilnærma referanseverdiar</span></footer>
+</div>
+
+<script>
+const RAL_COLORS = [
+  {code:"RAL 1000",name:"Gr\u00f8ngul",hex:"#BEBD7F"},{code:"RAL 1001",name:"Beige",hex:"#C2B078"},
+  {code:"RAL 1002",name:"Sandgul",hex:"#C6A664"},{code:"RAL 1003",name:"Signalgul",hex:"#E5BE01"},
+  {code:"RAL 1004",name:"Gullgul",hex:"#CDA434"},{code:"RAL 1005",name:"Honninggul",hex:"#A98307"},
+  {code:"RAL 1006",name:"Maisgul",hex:"#E4A010"},{code:"RAL 1007",name:"Narsissgul",hex:"#DC9D00"},
+  {code:"RAL 1011",name:"Brunbeige",hex:"#8A6642"},{code:"RAL 1012",name:"Sitrongul",hex:"#C7B446"},
+  {code:"RAL 1013",name:"\u00d8sterskvit",hex:"#EAE6CA"},{code:"RAL 1014",name:"Elfenbein",hex:"#E1CC4F"},
+  {code:"RAL 1015",name:"Lys elfenbein",hex:"#E6D690"},{code:"RAL 1016",name:"Svovlegul",hex:"#EDFF21"},
+  {code:"RAL 1017",name:"Safrrangul",hex:"#F5D033"},{code:"RAL 1018",name:"Zinkgul",hex:"#F8F32B"},
+  {code:"RAL 1019",name:"Gr\u00e5gul",hex:"#9E9764"},{code:"RAL 1020",name:"Olivegul",hex:"#999950"},
+  {code:"RAL 1021",name:"Rapesgul",hex:"#F3DA0B"},{code:"RAL 1023",name:"Trafikkgul",hex:"#FAD201"},
+  {code:"RAL 1024",name:"Okergul",hex:"#AEA04B"},{code:"RAL 1026",name:"Lysande gul",hex:"#FFFF00"},
+  {code:"RAL 1027",name:"Karriegul",hex:"#9D9101"},{code:"RAL 1028",name:"Meloningul",hex:"#F4A900"},
+  {code:"RAL 1032",name:"Ginsterblomstgul",hex:"#D6AE01"},{code:"RAL 1033",name:"Dahliagul",hex:"#F3A505"},
+  {code:"RAL 1034",name:"Pastellgul",hex:"#EFA94A"},{code:"RAL 1037",name:"Solgul",hex:"#F39F18"},
+  {code:"RAL 2000",name:"Gulappelsin",hex:"#ED760E"},{code:"RAL 2001",name:"Raudappelsin",hex:"#C93C20"},
+  {code:"RAL 2002",name:"Blodappelsin",hex:"#CB2821"},{code:"RAL 2003",name:"Pastellappelsin",hex:"#FF7514"},
+  {code:"RAL 2004",name:"Reinappelsin",hex:"#F44611"},{code:"RAL 2008",name:"Lys raud appelsin",hex:"#F75E25"},
+  {code:"RAL 2009",name:"Trafikkappelsin",hex:"#F54021"},{code:"RAL 2010",name:"Signalappelsin",hex:"#D84B20"},
+  {code:"RAL 2011",name:"Djupappelsin",hex:"#EC7C26"},{code:"RAL 2012",name:"Laksappelsin",hex:"#E55137"},
+  {code:"RAL 3000",name:"Flammeraud",hex:"#AF2B1E"},{code:"RAL 3001",name:"Signalraud",hex:"#A52019"},
+  {code:"RAL 3002",name:"Karminraud",hex:"#A2231D"},{code:"RAL 3003",name:"Rubinraud",hex:"#9B111E"},
+  {code:"RAL 3004",name:"Purpurraud",hex:"#75151E"},{code:"RAL 3005",name:"Vinraud",hex:"#5E2129"},
+  {code:"RAL 3007",name:"Svartlaude raud",hex:"#412227"},{code:"RAL 3009",name:"Oksidraud",hex:"#642424"},
+  {code:"RAL 3011",name:"Brunraud",hex:"#781F19"},{code:"RAL 3012",name:"Beige raud",hex:"#C1876B"},
+  {code:"RAL 3013",name:"Tomatraud",hex:"#A12312"},{code:"RAL 3014",name:"Antikvit raud",hex:"#D36E70"},
+  {code:"RAL 3015",name:"Lysrosa",hex:"#EA899A"},{code:"RAL 3016",name:"Koralraud",hex:"#B32821"},
+  {code:"RAL 3017",name:"Rosa",hex:"#E63244"},{code:"RAL 3018",name:"Jordb\u00e6rraud",hex:"#D53032"},
+  {code:"RAL 3020",name:"Trafikkraud",hex:"#CC0605"},{code:"RAL 3022",name:"Laksraud",hex:"#D95030"},
+  {code:"RAL 3027",name:"Himberraud",hex:"#C51D34"},{code:"RAL 3028",name:"Reinraud",hex:"#CB3234"},
+  {code:"RAL 3031",name:"Orientraud",hex:"#B32428"},
+  {code:"RAL 4001",name:"Raudlila",hex:"#6D3F5B"},{code:"RAL 4002",name:"Raudviolett",hex:"#922B3E"},
+  {code:"RAL 4003",name:"Erikaviolett",hex:"#DE4C8A"},{code:"RAL 4004",name:"Bordeauxviolett",hex:"#641C34"},
+  {code:"RAL 4005",name:"Bl\u00e5lila",hex:"#6C4675"},{code:"RAL 4006",name:"Trafikkpurpur",hex:"#A03472"},
+  {code:"RAL 4007",name:"Purpurviolett",hex:"#4A192C"},{code:"RAL 4008",name:"Signalviolett",hex:"#924E7D"},
+  {code:"RAL 4009",name:"Pastellviolett",hex:"#A18594"},{code:"RAL 4010",name:"Telemagenta",hex:"#CF3476"},
+  {code:"RAL 5000",name:"Violettbl\u00e5",hex:"#354D73"},{code:"RAL 5001",name:"Gr\u00f8nbl\u00e5",hex:"#1F3438"},
+  {code:"RAL 5002",name:"Ultramarin",hex:"#20214F"},{code:"RAL 5003",name:"Safirbl\u00e5",hex:"#1D1E33"},
+  {code:"RAL 5004",name:"Svartbl\u00e5",hex:"#18171C"},{code:"RAL 5005",name:"Signalbl\u00e5",hex:"#1E2460"},
+  {code:"RAL 5007",name:"Brilliantbl\u00e5",hex:"#3E5F8A"},{code:"RAL 5008",name:"Grabl\u00e5",hex:"#26252D"},
+  {code:"RAL 5009",name:"Azurbl\u00e5",hex:"#025669"},{code:"RAL 5010",name:"Gentianbl\u00e5",hex:"#0E294B"},
+  {code:"RAL 5012",name:"Lysbl\u00e5",hex:"#3B83BD"},{code:"RAL 5013",name:"Koboltbl\u00e5",hex:"#1E213D"},
+  {code:"RAL 5014",name:"Duebl\u00e5",hex:"#606E8C"},{code:"RAL 5015",name:"Himmelsbl\u00e5",hex:"#2271BB"},
+  {code:"RAL 5017",name:"Trafikkbl\u00e5",hex:"#063971"},{code:"RAL 5018",name:"Turkisbl\u00e5",hex:"#3F888F"},
+  {code:"RAL 5019",name:"Capribl\u00e5",hex:"#1B5583"},{code:"RAL 5020",name:"Havbl\u00e5",hex:"#1D334A"},
+  {code:"RAL 5021",name:"Vassbl\u00e5",hex:"#256D7B"},{code:"RAL 5022",name:"Nattbl\u00e5",hex:"#252850"},
+  {code:"RAL 5023",name:"Fjernbl\u00e5",hex:"#49678D"},{code:"RAL 5024",name:"Pastellbl\u00e5",hex:"#5D9B9B"},
+  {code:"RAL 6000",name:"Patimagr\u00f8n",hex:"#316650"},{code:"RAL 6001",name:"Smaragdgr\u00f8n",hex:"#287233"},
+  {code:"RAL 6002",name:"Lauvsortgr\u00f8n",hex:"#2D572C"},{code:"RAL 6003",name:"Olivegr\u00f8n",hex:"#424632"},
+  {code:"RAL 6004",name:"Bl\u00e5gr\u00f8n",hex:"#1F3A3D"},{code:"RAL 6005",name:"Mossgr\u00f8n",hex:"#2F4538"},
+  {code:"RAL 6006",name:"Graboliv",hex:"#3E3B32"},{code:"RAL 6007",name:"Flaskegr\u00f8n",hex:"#343B29"},
+  {code:"RAL 6008",name:"Brungr\u00f8n",hex:"#39352A"},{code:"RAL 6009",name:"Grangr\u00f8n",hex:"#31372B"},
+  {code:"RAL 6010",name:"Grasgr\u00f8n",hex:"#35682D"},{code:"RAL 6011",name:"Resedagr\u00f8n",hex:"#587246"},
+  {code:"RAL 6012",name:"Svartgr\u00f8n",hex:"#343E40"},{code:"RAL 6013",name:"Sivsgr\u00f8n",hex:"#6C7156"},
+  {code:"RAL 6016",name:"Turkisgr\u00f8n",hex:"#1E5945"},{code:"RAL 6017",name:"Maigr\u00f8n",hex:"#4C9141"},
+  {code:"RAL 6018",name:"Gulgr\u00f8n",hex:"#57A639"},{code:"RAL 6019",name:"Kvitgr\u00f8n",hex:"#BDECB6"},
+  {code:"RAL 6021",name:"Pastellgr\u00f8n",hex:"#89AC76"},{code:"RAL 6024",name:"Trafikkgr\u00f8n",hex:"#308446"},
+  {code:"RAL 6025",name:"Bregncgr\u00f8n",hex:"#3D6B35"},{code:"RAL 6027",name:"Lysgr\u00f8n",hex:"#83C88A"},
+  {code:"RAL 6029",name:"Mintgr\u00f8n",hex:"#20603D"},{code:"RAL 6032",name:"Signalgr\u00f8n",hex:"#317F43"},
+  {code:"RAL 6033",name:"Mintt\u00fcrkis",hex:"#497E76"},{code:"RAL 6034",name:"Pastellt\u00fcrkis",hex:"#7FB5B5"},
+  {code:"RAL 6037",name:"Reingr\u00f8n",hex:"#008F39"},
+  {code:"RAL 7000",name:"Farregra",hex:"#78858B"},{code:"RAL 7001",name:"S\u00f8vgra",hex:"#8A9597"},
+  {code:"RAL 7002",name:"Olivegra",hex:"#817F68"},{code:"RAL 7003",name:"Mossgra",hex:"#6C7059"},
+  {code:"RAL 7004",name:"Signalgra",hex:"#969992"},{code:"RAL 7005",name:"Musgra",hex:"#646B63"},
+  {code:"RAL 7006",name:"Beirgra",hex:"#6D6552"},{code:"RAL 7008",name:"Khakigra",hex:"#6A5F31"},
+  {code:"RAL 7009",name:"Gr\u00f8nngra",hex:"#4D5645"},{code:"RAL 7010",name:"Presenninggra",hex:"#4C514A"},
+  {code:"RAL 7011",name:"Jarngr\u00e5",hex:"#434B4D"},{code:"RAL 7012",name:"Basaltgra",hex:"#4E5754"},
+  {code:"RAL 7013",name:"Brungra",hex:"#464531"},{code:"RAL 7015",name:"Skifergra",hex:"#434750"},
+  {code:"RAL 7016",name:"Antrasittgra",hex:"#293133"},{code:"RAL 7021",name:"Svartgra",hex:"#23282B"},
+  {code:"RAL 7022",name:"Skymgra",hex:"#332F2C"},{code:"RAL 7023",name:"Betongra",hex:"#686C5E"},
+  {code:"RAL 7024",name:"Grafittgra",hex:"#474A51"},{code:"RAL 7026",name:"Granittgra",hex:"#2F353B"},
+  {code:"RAL 7030",name:"Steingr\u00e5",hex:"#8B8C7A"},{code:"RAL 7031",name:"Bl\u00e5gr\u00e5",hex:"#474B4E"},
+  {code:"RAL 7032",name:"Kiselgr\u00e5",hex:"#B8B799"},{code:"RAL 7033",name:"Sementgr\u00e5",hex:"#7D8471"},
+  {code:"RAL 7034",name:"Gulgra",hex:"#8F8B66"},{code:"RAL 7035",name:"Lysgr\u00e5",hex:"#D7D7D7"},
+  {code:"RAL 7036",name:"Platinagra",hex:"#7F7679"},{code:"RAL 7037",name:"St\u00f8vgr\u00e5",hex:"#7D7F7D"},
+  {code:"RAL 7038",name:"Agattgr\u00e5",hex:"#B5B8B1"},{code:"RAL 7039",name:"Kvartsgr\u00e5",hex:"#6C6960"},
+  {code:"RAL 7040",name:"Vindusgr\u00e5",hex:"#9DA1AA"},{code:"RAL 7042",name:"Trafikkgr\u00e5 A",hex:"#8D948D"},
+  {code:"RAL 7043",name:"Trafikkgr\u00e5 B",hex:"#4E5452"},{code:"RAL 7044",name:"Silkegr\u00e5",hex:"#CAC4B0"},
+  {code:"RAL 7045",name:"Telegr\u00e5 1",hex:"#909090"},{code:"RAL 7046",name:"Telegr\u00e5 2",hex:"#82898F"},
+  {code:"RAL 7047",name:"Telegr\u00e5 4",hex:"#D0D0D0"},{code:"RAL 7048",name:"Perlmusgra",hex:"#898176"},
+  {code:"RAL 8000",name:"Gr\u00f8nbrun",hex:"#826C34"},{code:"RAL 8001",name:"Okrebrun",hex:"#955F20"},
+  {code:"RAL 8002",name:"Signalbrun",hex:"#6C3B2A"},{code:"RAL 8003",name:"Leirbrun",hex:"#734222"},
+  {code:"RAL 8004",name:"Koparbrun",hex:"#8E402A"},{code:"RAL 8007",name:"Raudyrebrun",hex:"#59351F"},
+  {code:"RAL 8008",name:"Olivebrun",hex:"#6F4F28"},{code:"RAL 8011",name:"N\u00f8ttbrun",hex:"#5B3A29"},
+  {code:"RAL 8012",name:"Raudbrun",hex:"#592321"},{code:"RAL 8014",name:"Sepibrun",hex:"#382C1E"},
+  {code:"RAL 8015",name:"Kastanjebrun",hex:"#633A34"},{code:"RAL 8016",name:"Mahognibrun",hex:"#4C2F27"},
+  {code:"RAL 8017",name:"Sjokoladebrun",hex:"#45322E"},{code:"RAL 8019",name:"Grybrun",hex:"#403A3A"},
+  {code:"RAL 8022",name:"Svartbrun",hex:"#212121"},{code:"RAL 8023",name:"Appelsinbrun",hex:"#A65E2E"},
+  {code:"RAL 8024",name:"Beigbrun",hex:"#79553D"},{code:"RAL 8025",name:"Paleybrun",hex:"#755C48"},
+  {code:"RAL 8028",name:"Terrabrun",hex:"#4E3B31"},
+  {code:"RAL 9001",name:"Kremkvit",hex:"#FDF4E3"},{code:"RAL 9002",name:"Gr\u00e5-kvit",hex:"#E7EBDA"},
+  {code:"RAL 9003",name:"Signalkvit",hex:"#F4F4F4"},{code:"RAL 9004",name:"Signalsvart",hex:"#282828"},
+  {code:"RAL 9005",name:"Jettsvart",hex:"#0A0A0A"},{code:"RAL 9006",name:"Kvit aluminium",hex:"#A5A5A5"},
+  {code:"RAL 9007",name:"Gra aluminium",hex:"#8F8F8F"},{code:"RAL 9010",name:"Reinkvit",hex:"#FFFFFF"},
+  {code:"RAL 9011",name:"Grafittsvart",hex:"#1C1C1C"},{code:"RAL 9016",name:"Trafikkkvit",hex:"#F6F6F6"},
+  {code:"RAL 9017",name:"Trafikksvart",hex:"#1E1E1E"},{code:"RAL 9018",name:"Papyruskvit",hex:"#D7D7D0"},
+  {code:"RAL 9022",name:"Perlgra 1",hex:"#9E9E9E"},{code:"RAL 9023",name:"Perlgra 2",hex:"#808080"},
+];
+const NCS_COLORS = [
+  {code:"NCS S 0000-N",name:"Kvit",hex:"#FFFFFF"},{code:"NCS S 0500-N",name:"N\u00e6r kvit",hex:"#F2F2F2"},
+  {code:"NCS S 1000-N",name:"Veldig lys gr\u00e5",hex:"#E5E5E5"},{code:"NCS S 2000-N",name:"Lys gr\u00e5",hex:"#CCCCCC"},
+  {code:"NCS S 3000-N",name:"Lys mellomgr\u00e5",hex:"#B2B2B2"},{code:"NCS S 4000-N",name:"Mellomgr\u00e5",hex:"#999999"},
+  {code:"NCS S 5000-N",name:"M\u00f8rk mellomgr\u00e5",hex:"#7F7F7F"},{code:"NCS S 6000-N",name:"M\u00f8rk gr\u00e5",hex:"#666666"},
+  {code:"NCS S 7000-N",name:"Veldig m\u00f8rk gr\u00e5",hex:"#4C4C4C"},{code:"NCS S 8000-N",name:"N\u00e6r svart",hex:"#323232"},
+  {code:"NCS S 9000-N",name:"Svart",hex:"#191919"},
+  {code:"NCS S 0530-Y",name:"Veldig lys gul",hex:"#F2F2A6"},{code:"NCS S 0530-Y30R",name:"Veldig lys gulraud",hex:"#F2DBA6"},
+  {code:"NCS S 0530-R",name:"Veldig lys raud",hex:"#F2A6A6"},{code:"NCS S 0530-B",name:"Veldig lys bl\u00e5",hex:"#A6A6F2"},
+  {code:"NCS S 0530-G",name:"Veldig lys gr\u00f8n",hex:"#A6F2A6"},
+  {code:"NCS S 1030-Y",name:"Lys gul",hex:"#E6E699"},{code:"NCS S 1030-Y30R",name:"Lys gulraud",hex:"#E6CF99"},
+  {code:"NCS S 1030-R",name:"Lys raud",hex:"#E69999"},{code:"NCS S 1030-B",name:"Lys bl\u00e5",hex:"#9999E6"},
+  {code:"NCS S 1030-G",name:"Lys gr\u00f8n",hex:"#99E699"},
+  {code:"NCS S 2050-Y",name:"Middels sterk gul",hex:"#CCCC4D"},{code:"NCS S 2050-Y30R",name:"Middels sterk gulraud",hex:"#CCA64D"},
+  {code:"NCS S 2050-R",name:"Middels sterk raud",hex:"#CC4D4D"},{code:"NCS S 2050-B",name:"Middels sterk bl\u00e5",hex:"#4D4DCC"},
+  {code:"NCS S 2050-G",name:"Middels sterk gr\u00f8n",hex:"#4DCC4D"},
+  {code:"NCS S 3050-Y",name:"M\u00f8rk sterk gul",hex:"#B2B233"},{code:"NCS S 3050-R",name:"M\u00f8rk sterk raud",hex:"#B23333"},
+  {code:"NCS S 3050-B",name:"M\u00f8rk sterk bl\u00e5",hex:"#3333B2"},{code:"NCS S 3050-G",name:"M\u00f8rk sterk gr\u00f8n",hex:"#33B233"},
+  {code:"NCS S 4030-Y",name:"M\u00f8rk middels gul",hex:"#99994C"},{code:"NCS S 4030-R",name:"M\u00f8rk middels raud",hex:"#994C4C"},
+  {code:"NCS S 4030-B",name:"M\u00f8rk middels bl\u00e5",hex:"#4C4C99"},{code:"NCS S 4030-G",name:"M\u00f8rk middels gr\u00f8n",hex:"#4C994C"},
+  {code:"NCS S 5020-Y",name:"Djup dempet gul",hex:"#80804C"},{code:"NCS S 5020-R",name:"Djup dempet raud",hex:"#804C4C"},
+  {code:"NCS S 5020-B",name:"Djup dempet bl\u00e5",hex:"#4C4C80"},{code:"NCS S 5020-G",name:"Djup dempet gr\u00f8n",hex:"#4C804C"},
+  {code:"NCS S 6020-Y",name:"Veldig m\u00f8rk gul",hex:"#666633"},{code:"NCS S 6020-R",name:"Veldig m\u00f8rk raud",hex:"#663333"},
+  {code:"NCS S 6020-B",name:"Veldig m\u00f8rk bl\u00e5",hex:"#333366"},{code:"NCS S 6020-G",name:"Veldig m\u00f8rk gr\u00f8n",hex:"#336633"},
+];
+
+var currentSystem='RAL',selectedA=null,selectedB=null;
+var _sjekkInterval=null,_eiendomLasta=false;
+var EIENDOM_URL='http://localhost:5051';
+
+function switchPage(id){
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+  document.getElementById('page-'+id).classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach(function(t,i){
+    t.classList.toggle('active',['dashboard','contrast','price','eigedomsinfo'][i]===id);
+  });
+  window.scrollTo(0,0);
+  if(id==='eigedomsinfo'){
+    sjekkTilkopling();
+    if(!_sjekkInterval) _sjekkInterval=setInterval(sjekkTilkopling,8000);
+  } else {
+    clearInterval(_sjekkInterval); _sjekkInterval=null;
+  }
+}
+function switchSystem(sys){
+  currentSystem=sys; selectedA=null; selectedB=null;
+  document.querySelectorAll('.sys-tab').forEach(function(t,i){t.classList.toggle('active',['RAL','NCS'][i]===sys);});
+  ['A','B'].forEach(function(s){document.getElementById('search'+s).value='';resetStrip(s);filterList(s);});
+  resetResults();
+}
+function getColors(){return currentSystem==='RAL'?RAL_COLORS:NCS_COLORS;}
+function filterList(side){
+  var q=document.getElementById('search'+side).value.toLowerCase().trim();
+  var colors=getColors();
+  var filtered=q?colors.filter(function(c){return c.code.toLowerCase().includes(q)||c.name.toLowerCase().includes(q);}):colors;
+  renderList(side,filtered);
+}
+function renderList(side,filtered){
+  var sel=side==='A'?selectedA:selectedB;
+  document.getElementById('count'+side).textContent=filtered.length+' fargar';
+  document.getElementById('inner'+side).innerHTML=filtered.map(function(c){
+    var isSel=sel&&sel.code===c.code;
+    var safeCode=c.code.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    return '<div class="ci'+(isSel?' selected':'')+'" onclick="selectColor(\''+side+'\',\''+safeCode+'\')">'
+      +'<div class="ci-sw" style="background:'+c.hex+'"></div>'
+      +'<div class="ci-txt"><div class="ci-code">'+c.code+'</div>'
+      +'<div class="ci-name">'+c.name+'</div></div></div>';
+  }).join('');
+}
+function selectColor(side,code){
+  var c=getColors().find(function(x){return x.code===code;});
+  if(!c)return;
+  if(side==='A')selectedA=c; else selectedB=c;
+  document.getElementById('sw'+side).style.background=c.hex;
+  document.getElementById('pc'+side).textContent=c.code;
+  document.getElementById('pn'+side).textContent=c.name;
+  document.getElementById('ph'+side).textContent=c.hex;
+  filterList(side);
+  if(selectedA&&selectedB)computeContrast(); else resetResults();
+}
+function resetStrip(side){
+  document.getElementById('sw'+side).style.background='';
+  document.getElementById('pc'+side).textContent='\u2014';
+  document.getElementById('pn'+side).textContent='Ingen valt';
+  document.getElementById('ph'+side).textContent='';
+}
+function hexRgb(hex){return[parseInt(hex.slice(1,3),16),parseInt(hex.slice(3,5),16),parseInt(hex.slice(5,7),16)];}
+function lin(v){v/=255;return v<=0.03928?v/12.92:Math.pow((v+0.055)/1.055,2.4);}
+function lum(rgb){return 0.2126*lin(rgb[0])+0.7152*lin(rgb[1])+0.0722*lin(rgb[2]);}
+function contrastRatio(hA,hB){var lA=lum(hexRgb(hA)),lB=lum(hexRgb(hB));var h=lA>lB?lA:lB,l=lA>lB?lB:lA;return(h+0.05)/(l+0.05);}
+function computeContrast(){
+  var ratio=contrastRatio(selectedA.hex,selectedB.hex);
+  var lumA=lum(hexRgb(selectedA.hex)),lumB=lum(hexRgb(selectedB.hex));
+  var delta=Math.abs(lumA-lumB);
+  var rStr=ratio.toFixed(2),dStr=delta.toFixed(3);
+  var numEl=document.getElementById('ratioNum');
+  numEl.textContent=rStr;
+  numEl.style.color=ratio>=7?'var(--pass)':ratio>=4.5?'#1A5FA6':ratio>=3?'var(--warn)':'var(--fail)';
+  var dAB=document.getElementById('demoAB');
+  dAB.style.background=selectedB.hex;dAB.style.color=selectedA.hex;
+  dAB.innerHTML='<div class="pb-sample">'+selectedA.code+'</div><div class="pb-label">A over B</div>';
+  var dBA=document.getElementById('demoBA');
+  dBA.style.background=selectedA.hex;dBA.style.color=selectedB.hex;
+  dBA.innerHTML='<div class="pb-sample">'+selectedB.code+'</div><div class="pb-label">B over A</div>';
+  document.getElementById('pairInfo').innerHTML=
+    '<div class="pair-dot" style="background:'+selectedA.hex+'"></div>'
+    +'<span><strong>'+selectedA.code+'</strong> '+selectedA.hex+'</span>'
+    +'<span style="color:var(--border-strong)">\u2192</span>'
+    +'<div class="pair-dot" style="background:'+selectedB.hex+'"></div>'
+    +'<span><strong>'+selectedB.code+'</strong> '+selectedB.hex+'</span>';
+  var WCAG=[
+    {level:'AA',desc:'Normal tekst (&lt; 18pt)',req:4.5,reqStr:'\u2265 4,5 : 1'},
+    {level:'AA',desc:'Stor tekst (18pt+ / 14pt fet)',req:3,reqStr:'\u2265 3,0 : 1'},
+    {level:'AAA',desc:'Normal tekst (&lt; 18pt)',req:7,reqStr:'\u2265 7,0 : 1'},
+    {level:'AAA',desc:'Stor tekst (18pt+ / 14pt fet)',req:4.5,reqStr:'\u2265 4,5 : 1'},
+  ];
+  document.getElementById('wcagRows').innerHTML=WCAG.map(function(c){
+    var pass=ratio>=c.req;
+    return '<div class="wcag-row"><span class="w-level">'+c.level+'</span><span class="w-desc">'+c.desc+'</span><span class="w-req">'+c.reqStr+'</span><span class="badge '+(pass?'badge-pass':'badge-fail')+'">'+(pass?'\u2713 Godkjent':'\u2717 For l\u00e5gt')+'</span></div>';
+  }).join('');
+  var wcagMsg,wcagCls;
+  if(ratio>=7){wcagMsg='<strong>Framifr\u00e5 kontrast ('+rStr+':1) \u2014 WCAG AAA.</strong> Oppfyller alle krav.';wcagCls='pass';}
+  else if(ratio>=4.5){wcagMsg='<strong>God kontrast ('+rStr+':1) \u2014 WCAG AA.</strong> Oppfyller minstekrav for normal tekst.';wcagCls='pass';}
+  else if(ratio>=3){wcagMsg='<strong>Moderat kontrast ('+rStr+':1) \u2014 WCAG AA berre stor tekst.</strong> Ikkje tilstrekkeleg for br\u00f8dtekst.';wcagCls='warn';}
+  else{wcagMsg='<strong>L\u00e5g kontrast ('+rStr+':1).</strong> Under WCAG-minstekrav.';wcagCls='fail';}
+  var wNote=document.getElementById('wcagNote');wNote.innerHTML=wcagMsg;wNote.className='ctx-note '+wcagCls;
+  document.getElementById('markerA').style.left=(lumA*100).toFixed(1)+'%';
+  document.getElementById('markerB').style.left=(lumB*100).toFixed(1)+'%';
+  document.getElementById('lumAval').textContent=lumA.toFixed(3);
+  document.getElementById('lumBval').textContent=lumB.toFixed(3);
+  var tek17pass=delta>=0.4;
+  var dEl=document.getElementById('deltaVal');
+  dEl.textContent=dStr;
+  dEl.style.color=tek17pass?'var(--pass)':delta>=0.28?'var(--warn)':'var(--fail)';
+  document.getElementById('deltaThresh').textContent=tek17pass
+    ?'\u2713 Oppfyller TEK17-kravet (\u394L \u2265 0,40) \u2014 differansen er '+dStr
+    :'\u2717 Under kravet \u2014 manglar '+(0.4-delta).toFixed(3)+' i luminansdifferanse';
+  var TEK=[
+    {par:'\u00a712-16 (1)',elem:'Hovudinngangsd\u00f8r / d\u00f8rblad mot karm'},
+    {par:'\u00a712-16 (1)',elem:'Trappeforkant / neseliste mot trinn'},
+    {par:'\u00a712-16 (1)',elem:'Handlist / rekkverk mot bakgrunn'},
+    {par:'\u00a712-16 (1)',elem:'D\u00f8rkarmar og vindaugskarmar mot vegg'},
+    {par:'\u00a712-16 (2)',elem:'Informasjonsskilt \u2014 tekst mot bakgrunn'},
+    {par:'\u00a712-16 (2)',elem:'Betjeningspanel / knapp mot omgjevnad'},
+    {par:'\u00a712-16 (1)',elem:'Golv / vegg-overgang ved soneskifte'},
+    {par:'\u00a712-16 (3)',elem:'Ledelinje / varselmarkering mot golv'},
+  ];
+  var tkCls=tek17pass?'badge-pass':'badge-fail';
+  var tkTxt=tek17pass?'\u2713 Godkjent':'\u2717 For l\u00e5gt';
+  document.getElementById('tekRows').innerHTML=TEK.map(function(e){
+    return '<div class="tek-row"><span class="t-par">'+e.par+'</span><span class="t-elem">'+e.elem+'</span><span class="badge '+tkCls+'">'+tkTxt+'</span></div>';
+  }).join('');
+  var tekMsg,tekCls;
+  if(tek17pass&&delta>=0.6){tekMsg='<strong>Framifr\u00e5 luminanskontrast (\u394L = '+dStr+').</strong> Godt over TEK17-grensa.';tekCls='pass';}
+  else if(tek17pass){tekMsg='<strong>Godkjent luminanskontrast (\u394L = '+dStr+') \u2014 oppfyller TEK17 \u00a712-16.</strong>';tekCls='pass';}
+  else if(delta>=0.28){tekMsg='<strong>Utilstrekkeleg luminanskontrast (\u394L = '+dStr+').</strong> Manglar '+(0.4-delta).toFixed(3)+' i \u394L.';tekCls='warn';}
+  else{tekMsg='<strong>For l\u00e5g luminanskontrast (\u394L = '+dStr+').</strong> Ein av fargane m\u00e5 vera vesentleg lysare eller m\u00f8rkare.';tekCls='fail';}
+  var tNote=document.getElementById('tekNote');tNote.innerHTML=tekMsg;tNote.className='ctx-note '+tekCls;
+}
+function resetResults(){
+  var numEl=document.getElementById('ratioNum');numEl.textContent='\u2014';numEl.style.color='var(--text-dim)';
+  document.getElementById('pairInfo').innerHTML='<span style="color:var(--text-dim)">Vel to fargar for \u00e5 rekne ut kontrast</span>';
+  document.getElementById('demoAB').style.background='';document.getElementById('demoAB').style.color='';
+  document.getElementById('demoAB').innerHTML='<div class="pb-sample">Tekst A p\u00e5 B</div><div class="pb-label">A over B</div>';
+  document.getElementById('demoBA').style.background='';document.getElementById('demoBA').style.color='';
+  document.getElementById('demoBA').innerHTML='<div class="pb-sample">Tekst B p\u00e5 A</div><div class="pb-label">B over A</div>';
+  var WCAG=[{l:'AA',d:'Normal tekst (&lt; 18pt)',r:'\u2265 4,5 : 1'},{l:'AA',d:'Stor tekst (18pt+ / 14pt fet)',r:'\u2265 3,0 : 1'},{l:'AAA',d:'Normal tekst (&lt; 18pt)',r:'\u2265 7,0 : 1'},{l:'AAA',d:'Stor tekst (18pt+ / 14pt fet)',r:'\u2265 4,5 : 1'}];
+  document.getElementById('wcagRows').innerHTML=WCAG.map(function(c){return '<div class="wcag-row"><span class="w-level">'+c.l+'</span><span class="w-desc">'+c.d+'</span><span class="w-req">'+c.r+'</span><span class="badge badge-empty">\u2014</span></div>';}).join('');
+  var wNote=document.getElementById('wcagNote');wNote.innerHTML='Vel to fargar fr\u00e5 listene over for \u00e5 rekne ut WCAG-kontrastforhold.';wNote.className='ctx-note';
+  document.getElementById('markerA').style.left='10%';document.getElementById('markerB').style.left='90%';
+  document.getElementById('lumAval').textContent='\u2014';document.getElementById('lumBval').textContent='\u2014';
+  var dEl=document.getElementById('deltaVal');dEl.textContent='\u2014';dEl.style.color='var(--text-dim)';
+  document.getElementById('deltaThresh').textContent='Vel to fargar for \u00e5 sj\u00e5 \u394L';
+  var TEK=[{p:'\u00a712-16 (1)',e:'Hovudinngangsd\u00f8r / d\u00f8rblad mot karm'},{p:'\u00a712-16 (1)',e:'Trappeforkant / neseliste mot trinn'},{p:'\u00a712-16 (1)',e:'Handlist / rekkverk mot bakgrunn'},{p:'\u00a712-16 (1)',e:'D\u00f8rkarmar og vindaugskarmar mot vegg'},{p:'\u00a712-16 (2)',e:'Informasjonsskilt \u2014 tekst mot bakgrunn'},{p:'\u00a712-16 (2)',e:'Betjeningspanel / knapp mot omgjevnad'},{p:'\u00a712-16 (1)',e:'Golv / vegg-overgang ved soneskifte'},{p:'\u00a712-16 (3)',e:'Ledelinje / varselmarkering mot golv'}];
+  document.getElementById('tekRows').innerHTML=TEK.map(function(e){return '<div class="tek-row"><span class="t-par">'+e.p+'</span><span class="t-elem">'+e.e+'</span><span class="badge badge-empty">\u2014</span></div>';}).join('');
+  var tNote=document.getElementById('tekNote');tNote.innerHTML='Vel to fargar fr\u00e5 listene over for \u00e5 vurdere TEK17-krav.';tNote.className='ctx-note';
+}
+
+/* PRICE */
+var BASE_COST_PER_M2={enebolig:48000,tomannsbolig:42000,rekkehus:39000,leilighetsbygg:35000,kontor:30000,naring:26000,hotell:34000,industri:18000,skole:42000,helse:50000};
+var TYPE_LABELS={enebolig:'Enebolig',tomannsbolig:'Tomannsbolig',rekkehus:'Rekkehus',leilighetsbygg:'Leilighetsbygg',kontor:'Kontor',naring:'N\u00e6ring / handel',hotell:'Hotell / overnatting',industri:'Industri / lager',skole:'Skole / barnehage',helse:'Helse / institusjon'};
+var BRA_TO_BTA=1.12;
+var BUILDTYPE_COST_FACTOR={nybygg:1.0,ombygging:0.68,tilbygg:0.75};
+var BUILDTYPE_HOUR_FACTOR={nybygg:1.0,ombygging:1.22,tilbygg:1.15};
+function getFeePct(e){if(e<2000000)return[16,24];if(e<5000000)return[12,18];if(e<15000000)return[8,13];if(e<40000000)return[6,10];if(e<100000000)return[4.5,7.5];return[3.5,6.0];}
+function getDiffMultiplier(d){if(d<=2)return 0.78;if(d<=4)return 0.90;if(d<=6)return 1.00;if(d<=7)return 1.18;if(d<=8)return 1.35;if(d<=9)return 1.55;return 1.80;}
+function getDiffText(d){if(d<=2)return'Enkel standard';if(d<=4)return'Under middels';if(d<=6)return'Normal';if(d<=7)return'Krevjande';if(d<=8)return'Sv\u00e6rt krevjande';if(d<=9)return'Ekstremt krevjande';return'Maksimal kompleksitet';}
+var PHASE_DATA=[
+  {id:'muligheit',label:'Muligheitsstudie',pct:6},
+  {id:'skisse',label:'Skisseprosjekt (SK)',pct:15},
+  {id:'forprosjekt',label:'Forprosjekt (FP)',pct:20},
+  {id:'detalj',label:'Detaljprosjekt / Rammesøknad (DP)',pct:26},
+  {id:'utforelse',label:'Utf\u00f8relsesteikningar / Anbod (UTF)',pct:20},
+  {id:'byggeoppfolging',label:'Oppf\u00f8lging i byggefase (OBF)',pct:13},
+];
+var currentType='enebolig',currentUnit='BRA';
+function getRateRows(){
+  var rows=[];
+  document.querySelectorAll('#rateRows .rate-row').forEach(function(row){
+    var inputs=row.querySelectorAll('input');
+    rows.push({label:inputs[0].value.trim()||'Ukjend',rate:parseFloat(inputs[1].value)||0,pct:parseFloat(inputs[2].value)||0});
+  });
+  return rows;
+}
+function ratePctSum(){return getRateRows().reduce(function(s,r){return s+r.pct;},0);}
+function updateRateSumDisplay(){
+  var s=ratePctSum();
+  var el=document.getElementById('rateSumDisplay');
+  el.textContent=s+' %';
+  el.className=Math.abs(s-100)<0.5?'rate-sum-ok':'rate-sum-err';
+}
+function clampPct(inp){var v=parseFloat(inp.value);if(isNaN(v)){inp.value=0;return;}if(v<0){inp.value=0;return;}if(v>100)inp.value=100;updateRateSumDisplay();}
+function addRate(){
+  var rows=document.querySelectorAll('#rateRows .rate-row');
+  if(rows.length>=6)return;
+  var div=document.createElement('div');div.className='rate-row';
+  div.innerHTML='<div class="rate-label-wrap" style="display:flex;align-items:center;gap:5px"><button class="remove-rate-btn" onclick="removeRate(this)" title="Fjern rad">\u00d7</button><input class="rate-label-inp" type="text" value="" placeholder="Rolle" oninput="priceUpdate()"/></div><div class="rate-kr-wrap"><input type="number" value="1500" min="100" max="20000" oninput="priceUpdate()"/></div><div class="rate-pct-wrap"><input class="rate-pct-inp" type="number" value="0" min="0" max="100" oninput="clampPct(this);priceUpdate()"/><span class="pct-symbol">%</span></div>';
+  document.getElementById('rateRows').appendChild(div);
+  if(rows.length>=5)document.getElementById('addRateBtn').style.display='none';
+  updateRateSumDisplay();priceUpdate();
+}
+function removeRate(btn){var row=btn.closest('.rate-row');row.parentNode.removeChild(row);document.getElementById('addRateBtn').style.display='';updateRateSumDisplay();priceUpdate();}
+function selectType(btn){document.querySelectorAll('.type-btn').forEach(function(b){b.classList.remove('active');});btn.classList.add('active');currentType=btn.dataset.type;priceUpdate();}
+function setUnit(u){currentUnit=u;document.getElementById('btn-bra').classList.toggle('active',u==='BRA');document.getElementById('btn-bta').classList.toggle('active',u==='BTA');priceUpdate();}
+function togglePhase(el){el.classList.toggle('checked');el.querySelector('input[type=checkbox]').checked=el.classList.contains('checked');priceUpdate();}
+function updateDiffLabel(){var d=+document.getElementById('difficulty').value;document.getElementById('diffVal').textContent=d;document.getElementById('diffLabel').textContent='\u2014 '+getDiffText(d)+' ('+d+')';}
+function fmtKr(n){return Math.round(n).toLocaleString('nb-NO')+' kr';}
+function fmtT(n){return Math.round(n).toLocaleString('nb-NO')+' t';}
+function priceUpdate(){
+  var arealEl=document.getElementById('areal');if(!arealEl)return;
+  var areal=parseFloat(arealEl.value)||0;
+  var diff=+document.getElementById('difficulty').value;
+  var buildtype=document.querySelector('input[name=buildtype]:checked').value;
+  if(areal<=0)return;
+  updateRateSumDisplay();
+  var btaAreal=currentUnit==='BRA'?areal*BRA_TO_BTA:areal;
+  var costM2=BASE_COST_PER_M2[currentType]||40000;
+  var entreprise=btaAreal*costM2*(BUILDTYPE_COST_FACTOR[buildtype]||1);
+  var pctRange=getFeePct(entreprise);
+  var diffMult=getDiffMultiplier(diff);
+  var hourFact=BUILDTYPE_HOUR_FACTOR[buildtype]||1;
+  var feeLow=entreprise*(pctRange[0]/100)*diffMult*hourFact;
+  var feeHigh=entreprise*(pctRange[1]/100)*diffMult*hourFact;
+  var feeMid=(feeLow+feeHigh)/2;
+  var rates=getRateRows();
+  var totalPct=rates.reduce(function(s,r){return s+r.pct;},0);
+  var weightedRate=0;
+  if(totalPct>0)weightedRate=rates.reduce(function(s,r){return s+r.rate*(r.pct/totalPct);},0);
+  var hoursLow=weightedRate>0?feeLow/weightedRate:feeLow/1500;
+  var hoursHigh=weightedRate>0?feeHigh/weightedRate:feeHigh/1500;
+  var hoursMid=(hoursLow+hoursHigh)/2;
+  var activePhases=[];
+  document.querySelectorAll('.phase-item.checked').forEach(function(el){var p=PHASE_DATA.find(function(x){return x.id===el.dataset.phase;});if(p)activePhases.push(p);});
+  var totalActivePct=activePhases.reduce(function(s,p){return s+p.pct;},0);
+  document.getElementById('resEmpty').style.display='none';
+  document.getElementById('resContent').style.display='block';
+  document.getElementById('r-type').textContent=TYPE_LABELS[currentType]||currentType;
+  document.getElementById('r-buildtype').textContent={nybygg:'Nybygg',ombygging:'Ombygging / rehabilitering',tilbygg:'Tilbygg / p\u00e5bygg'}[buildtype]||buildtype;
+  document.getElementById('r-areal').textContent=areal.toLocaleString('nb-NO')+' m\u00b2 '+currentUnit+' (\u2248 '+Math.round(btaAreal).toLocaleString('nb-NO')+' m\u00b2 BTA)';
+  document.getElementById('r-diff').textContent=diff+' / 10 \u2014 '+getDiffText(diff);
+  document.getElementById('r-entreprise').textContent=fmtKr(entreprise);
+  document.getElementById('r-pctrange').textContent=pctRange[0].toFixed(1)+' % \u2013 '+pctRange[1].toFixed(1)+' % (justert for kompleksitet og type)';
+  document.getElementById('r-hoursMid').textContent=Math.round(hoursMid).toLocaleString('nb-NO')+' t';
+  document.getElementById('r-hoursRange').textContent=fmtT(hoursLow)+' \u2013 '+fmtT(hoursHigh);
+  document.getElementById('r-hoursM2').textContent=(hoursMid/btaAreal).toFixed(2)+' t/m\u00b2 BTA';
+  var rateHtml='';
+  rates.forEach(function(r){var share=totalPct>0?r.pct/totalPct:0;var rHours=hoursMid*share;var rFee=rHours*r.rate;rateHtml+='<div class="rrt-row"><span class="rrt-name">'+r.label+'</span><span class="rrt-pct">'+r.pct+' %</span><span class="rrt-hours">'+Math.round(rHours).toLocaleString('nb-NO')+' t</span><span class="rrt-fee" style="text-align:right">'+fmtKr(rFee)+'</span></div>';});
+  document.getElementById('r-rateRows').innerHTML=rateHtml;
+  var rateFeeTotal=rates.reduce(function(s,r){var share=totalPct>0?r.pct/totalPct:0;return s+hoursMid*share*r.rate;},0);
+  document.getElementById('r-rateTotalPct').textContent=totalPct+' %';
+  document.getElementById('r-rateTotalHours').textContent=Math.round(hoursMid).toLocaleString('nb-NO')+' t';
+  document.getElementById('r-rateTotalFee').textContent=fmtKr(rateFeeTotal);
+  document.getElementById('r-weightedRate').textContent=weightedRate>0?Math.round(weightedRate).toLocaleString('nb-NO')+' kr/t':'\u2014';
+  var phaseHtml='';
+  PHASE_DATA.forEach(function(p){
+    var isActive=activePhases.indexOf(p)>=0;
+    var pHoursMid=(hoursLow+hoursHigh)/2*(p.pct/100);
+    var pFee=(feeLow+feeHigh)/2*(p.pct/100);
+    phaseHtml+='<div class="phase-result-row" style="grid-template-columns:1fr 55px 80px 90px;'+(isActive?'':'opacity:.35')+'">'
+      +'<span class="pr-name">'+p.label+'</span><span class="pr-pct">'+p.pct+' %</span>'
+      +'<span style="font-family:var(--mono);font-size:12px">'+Math.round(pHoursMid).toLocaleString('nb-NO')+' t</span>'
+      +'<span class="pr-fee">'+fmtKr(pFee)+'</span></div>';
+  });
+  document.getElementById('r-phaseRows').innerHTML=phaseHtml;
+  var selFeeMid=(feeLow+feeHigh)/2*(totalActivePct/100);
+  var selHoursMid=hoursMid*(totalActivePct/100);
+  document.getElementById('r-totalPct').textContent=totalActivePct+' %';
+  document.getElementById('r-totalHoursSelected').textContent=Math.round(selHoursMid).toLocaleString('nb-NO')+' t';
+  document.getElementById('r-selectedTotal').textContent=activePhases.length===PHASE_DATA.length?fmtKr(feeMid):fmtKr(selFeeMid);
+}
+
+/* EIGEDOMSINFO */
+function sjekkTilkopling(){
+  var dot=document.getElementById('eiendom-dot');
+  var tekst=document.getElementById('eiendom-status-tekst');
+  if(dot)dot.className='eiendom-dot checking';
+  if(tekst)tekst.textContent='Sjekkar \u2026';
+  fetch(EIENDOM_URL,{mode:'no-cors',cache:'no-store'})
+    .then(function(){settEiendomStatus(true);})
+    .catch(function(){settEiendomStatus(false);});
+}
+function settEiendomStatus(online){
+  var dot=document.getElementById('eiendom-dot');
+  var tekst=document.getElementById('eiendom-status-tekst');
+  var frame=document.getElementById('eiendom-frame');
+  var offMsg=document.getElementById('eiendom-offline');
+  if(!dot)return;
+  dot.className='eiendom-dot '+(online?'online':'offline');
+  tekst.textContent=online?'Tilkopla  \u00b7  Flask k\u00f8yrer p\u00e5 port 5051':'Ikkje tilkopla';
+  if(online){
+    offMsg.style.display='none';frame.style.display='block';
+    if(!_eiendomLasta){frame.src=EIENDOM_URL;_eiendomLasta=true;}
+  } else {
+    frame.style.display='none';offMsg.style.display='flex';
+    _eiendomLasta=false;frame.src='about:blank';
+  }
+}
+function lastEiendomPaaNytt(){
+  _eiendomLasta=false;
+  var frame=document.getElementById('eiendom-frame');
+  if(frame)frame.src='about:blank';
+  var tekst=document.getElementById('eiendom-status-tekst');
+  if(tekst)tekst.textContent='Lastar p\u00e5 nytt \u2026';
+  setTimeout(sjekkTilkopling,500);
+}
+
+filterList('A');filterList('B');
+window.addEventListener('load',function(){updateDiffLabel();updateRateSumDisplay();priceUpdate();});
+</script>
+
+<!-- PRICE PAGE -->
+<div class="page" id="page-price">
+  <div class="container narrow">
+    <div class="page-head"><div class="page-tag">Verkt&#xF8;y 002</div><h2 class="page-title">Priskalkulator</h2><p class="page-sub">Estimat for arkitekthonorar &#x2014; basert p&#xE5; prosjekttype, storleik, kompleksitet og fase</p></div>
+    <div class="price-layout">
+      <div class="form-card">
+        <div class="sec-head">Prosjektparametrar</div>
+        <div class="form-section">
+          <label class="form-label">1. Prosjekttype</label>
+          <div class="radio-group">
+            <div class="radio-pill"><input type="radio" name="buildtype" id="bt-nybygg" value="nybygg" checked onchange="priceUpdate()"/><label for="bt-nybygg">Nybygg</label></div>
+            <div class="radio-pill"><input type="radio" name="buildtype" id="bt-ombygg" value="ombygging" onchange="priceUpdate()"/><label for="bt-ombygg">Ombygging / rehabilitering</label></div>
+            <div class="radio-pill"><input type="radio" name="buildtype" id="bt-tilbygg" value="tilbygg" onchange="priceUpdate()"/><label for="bt-tilbygg">Tilbygg / p&#xE5;bygg</label></div>
+          </div>
+        </div>
+        <div class="form-section">
+          <label class="form-label">2. Bygningskategori</label>
+          <div class="type-grid">
+            <button class="type-btn active" data-type="enebolig" onclick="selectType(this)">Enebolig</button>
+            <button class="type-btn" data-type="tomannsbolig" onclick="selectType(this)">Tomannsbolig</button>
+            <button class="type-btn" data-type="rekkehus" onclick="selectType(this)">Rekkehus</button>
+            <button class="type-btn" data-type="leilighetsbygg" onclick="selectType(this)">Leilighetsbygg</button>
+            <button class="type-btn" data-type="kontor" onclick="selectType(this)">Kontor</button>
+            <button class="type-btn" data-type="naring" onclick="selectType(this)">N&#xE6;ring / handel</button>
+            <button class="type-btn" data-type="hotell" onclick="selectType(this)">Hotell / overnatting</button>
+            <button class="type-btn" data-type="industri" onclick="selectType(this)">Industri / lager</button>
+            <button class="type-btn" data-type="skole" onclick="selectType(this)">Skole / barnehage</button>
+            <button class="type-btn" data-type="helse" onclick="selectType(this)">Helse / institusjon</button>
+          </div>
+        </div>
+        <div class="form-section">
+          <label class="form-label">3. Storleik <span> &#x2014; skriv inn areal</span></label>
+          <div class="num-input-wrap">
+            <input class="num-input" type="number" id="areal" min="10" max="999999" value="200" oninput="priceUpdate()" placeholder="200"/>
+            <div class="unit-toggle">
+              <button class="unit-btn active" id="btn-bra" onclick="setUnit('BRA')">BRA</button>
+              <button class="unit-btn" id="btn-bta" onclick="setUnit('BTA')">BTA</button>
+            </div>
+          </div>
+          <div style="margin-top:6px;font-size:11.5px;color:var(--text-dim)">BRA = bruksareal (innvendig) &#xA0;&#xB7;&#xA0; BTA = bruttoareal (inkl. ytterveggar)</div>
+        </div>
+        <div class="form-section">
+          <label class="form-label">4. Vanskelegheitsgrad <span id="diffLabel">&#x2014; normal (5)</span></label>
+          <div class="slider-wrap">
+            <div class="slider-track"><input class="range-input" type="range" id="difficulty" min="1" max="10" value="5" oninput="updateDiffLabel();priceUpdate()"/><span class="range-val" id="diffVal">5</span></div>
+            <div class="range-labels"><span>1 &#x2014; Enkel standard</span><span>5 &#x2014; Normal</span><span>10 &#x2014; Sv&#xE6;rt krevjande</span></div>
+          </div>
+        </div>
+        <div class="form-section">
+          <label class="form-label">5. Fasar som skal utf&#xF8;rast</label>
+          <div class="phase-list">
+            <div class="phase-item checked" data-phase="muligheit" onclick="togglePhase(this)"><input type="checkbox" checked readonly/><span class="phase-name">Muligheitsstudie</span><span class="phase-pct">ca. 6 %</span></div>
+            <div class="phase-item checked" data-phase="skisse" onclick="togglePhase(this)"><input type="checkbox" checked readonly/><span class="phase-name">Skisseprosjekt (SK)</span><span class="phase-pct">ca. 15 %</span></div>
+            <div class="phase-item checked" data-phase="forprosjekt" onclick="togglePhase(this)"><input type="checkbox" checked readonly/><span class="phase-name">Forprosjekt (FP)</span><span class="phase-pct">ca. 20 %</span></div>
+            <div class="phase-item checked" data-phase="detalj" onclick="togglePhase(this)"><input type="checkbox" checked readonly/><span class="phase-name">Detaljprosjekt / Rammesøknad (DP)</span><span class="phase-pct">ca. 26 %</span></div>
+            <div class="phase-item checked" data-phase="utforelse" onclick="togglePhase(this)"><input type="checkbox" checked readonly/><span class="phase-name">Utf&#xF8;relsesteikningar / Anbod (UTF)</span><span class="phase-pct">ca. 20 %</span></div>
+            <div class="phase-item checked" data-phase="byggeoppfolging" onclick="togglePhase(this)"><input type="checkbox" checked readonly/><span class="phase-name">Oppf&#xF8;lging i byggefase (OBF)</span><span class="phase-pct">ca. 13 %</span></div>
+          </div>
+          <div style="margin-top:8px;font-size:11.5px;color:var(--text-dim)">Klikk for &#xE5; velje berre dei fasane som er aktuelle for oppdraget.</div>
+        </div>
+        <div class="form-section">
+          <label class="form-label">6. Timeprisar og fordeling</label>
+          <div style="display:grid;grid-template-columns:1fr 130px 90px;gap:8px;margin-bottom:6px">
+            <span style="font-size:11px;color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:.06em">Rolle / kategori</span>
+            <span style="font-size:11px;color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:.06em">Timepris</span>
+            <span style="font-size:11px;color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:.06em">Andel</span>
+          </div>
+          <div id="rateRows">
+            <div class="rate-row"><div class="rate-label-wrap" style="display:flex;align-items:center;gap:5px"><button class="remove-rate-btn" onclick="removeRate(this)">&#xD7;</button><input class="rate-label-inp" type="text" value="Ansvarleg arkitekt" placeholder="Rolle" oninput="priceUpdate()"/></div><div class="rate-kr-wrap"><input type="number" value="1950" min="100" max="20000" oninput="priceUpdate()"/></div><div class="rate-pct-wrap"><input class="rate-pct-inp" type="number" value="30" min="0" max="100" oninput="clampPct(this);priceUpdate()"/><span class="pct-symbol">%</span></div></div>
+            <div class="rate-row"><div class="rate-label-wrap" style="display:flex;align-items:center;gap:5px"><button class="remove-rate-btn" onclick="removeRate(this)">&#xD7;</button><input class="rate-label-inp" type="text" value="Prosjektleder" placeholder="Rolle" oninput="priceUpdate()"/></div><div class="rate-kr-wrap"><input type="number" value="1750" min="100" max="20000" oninput="priceUpdate()"/></div><div class="rate-pct-wrap"><input class="rate-pct-inp" type="number" value="40" min="0" max="100" oninput="clampPct(this);priceUpdate()"/><span class="pct-symbol">%</span></div></div>
+            <div class="rate-row"><div class="rate-label-wrap" style="display:flex;align-items:center;gap:5px"><button class="remove-rate-btn" onclick="removeRate(this)">&#xD7;</button><input class="rate-label-inp" type="text" value="Arkitekt / tekniker" placeholder="Rolle" oninput="priceUpdate()"/></div><div class="rate-kr-wrap"><input type="number" value="1450" min="100" max="20000" oninput="priceUpdate()"/></div><div class="rate-pct-wrap"><input class="rate-pct-inp" type="number" value="30" min="0" max="100" oninput="clampPct(this);priceUpdate()"/><span class="pct-symbol">%</span></div></div>
+          </div>
+          <div class="rate-sum-row"><span class="rate-sum-label">Sum andel:</span><span id="rateSumDisplay" class="rate-sum-ok">100 %</span></div>
+          <button class="add-rate-btn" id="addRateBtn" onclick="addRate()">+ Legg til timerate</button>
+          <div style="margin-top:8px;font-size:11.5px;color:var(--text-dim)">Andel timeverk for kvar kategori. Sum b&#xF8;r vere 100 %.</div>
+        </div>
+        <div class="form-section" style="border-bottom:none"><button class="calc-btn" onclick="priceUpdate()">Rekn ut estimat</button></div>
+      </div>
+      <div class="result-card">
+        <div class="res-empty" id="resEmpty"><div class="res-empty-icon">&#x20A3;</div>Fyll inn prosjektparametrar<br/>og trykk &#xAB;Rekn ut estimat&#xBB;</div>
+        <div id="resContent" style="display:none">
+          <div class="sec-head">Prosjektgrunnlag</div>
+          <div class="res-section">
+            <div class="res-kv"><span class="res-key">Bygningskategori</span><span class="res-val" id="r-type">&#x2014;</span></div>
+            <div class="res-kv"><span class="res-key">Type</span><span class="res-val" id="r-buildtype">&#x2014;</span></div>
+            <div class="res-kv"><span class="res-key">Areal</span><span class="res-val" id="r-areal">&#x2014;</span></div>
+            <div class="res-kv"><span class="res-key">Vanskelegheitsgrad</span><span class="res-val" id="r-diff">&#x2014;</span></div>
+            <div class="res-kv"><span class="res-key">Estimert entreprisekostnad</span><span class="res-val" id="r-entreprise">&#x2014;</span></div>
+            <div class="res-kv" style="margin-top:6px;padding-top:8px;border-top:1px solid var(--border)"><span class="res-key" style="font-size:11px;color:var(--text-dim)">Honorarprosent (l&#xE5;g&#x2013;h&#xF8;g)</span><span class="res-val" style="font-size:12px;color:var(--text-dim)" id="r-pctrange">&#x2014;</span></div>
+          </div>
+          <div class="sec-head">Estimerte timeverk</div>
+          <div class="res-section">
+            <div style="display:flex;align-items:baseline;gap:6px;margin-bottom:8px"><span class="hours-big" id="r-hoursMid">&#x2014;</span><span class="hours-unit">timar totalt (midtpunkt)</span></div>
+            <div class="res-kv"><span class="res-key">Spenn (l&#xE5;g &#x2013; h&#xF8;g)</span><span class="res-val" id="r-hoursRange">&#x2014;</span></div>
+            <div class="res-kv"><span class="res-key">Timer per m&#xB2; BTA</span><span class="res-val" id="r-hoursM2">&#x2014;</span></div>
+          </div>
+          <div class="sec-head">Honorar per timerate</div>
+          <div class="res-section" style="padding:0">
+            <div class="rate-result-table">
+              <div class="rrt-head"><span>Rolle</span><span>Andel</span><span>Timar</span><span style="text-align:right">Bel&#xF8;p</span></div>
+              <div id="r-rateRows"></div>
+              <div class="rrt-row total-row"><span class="rrt-name" style="font-weight:600;color:var(--accent)">Totalt</span><span class="rrt-pct" id="r-rateTotalPct">&#x2014;</span><span class="rrt-hours" id="r-rateTotalHours">&#x2014;</span><span class="rrt-fee accent" id="r-rateTotalFee">&#x2014;</span></div>
+            </div>
+            <div class="weighted-rate-note" style="padding:.6rem .75rem;border-top:1px solid var(--border)"><span>Vekta snittpris:</span><strong id="r-weightedRate">&#x2014; kr/t</strong></div>
+          </div>
+          <div class="sec-head">Honorar per fase</div>
+          <div class="res-section" style="padding:0">
+            <div class="phase-result-row" style="border-top:none;grid-template-columns:1fr 55px 80px 90px"><span>Fase</span><span>And.</span><span>Timar</span><span>Bel&#xF8;p</span></div>
+            <div id="r-phaseRows"></div>
+            <div class="phase-result-row total-row" style="grid-template-columns:1fr 55px 80px 90px"><span class="pr-name">Valde fasar</span><span class="pr-pct" id="r-totalPct">&#x2014;</span><span class="pr-fee" id="r-totalHoursSelected" style="font-family:var(--mono);font-size:12px">&#x2014;</span><span class="pr-fee total-row" id="r-selectedTotal">&#x2014;</span></div>
+          </div>
+          <div class="res-section" style="border-bottom:none">
+            <div class="afag-note"><strong>Merk:</strong> Timeverk er rekna ut fr&#xE5; vekta snittpris og honorarestimat. Tala er basert p&#xE5; erfaringstal fr&#xE5; AFAG og bransjenormer per 2024. Entreprisekostnadar er grovt estimerte. Alle bel&#xF8;p er ekskl. mva. Bruk estimatet som rettleiing, ikkje som tilbod.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <footer class="page-footer"><span>Arkitektverkt&#xF8;y &#xB7; Priskalkulator</span><span>Erfaringstal AFAG 2024 &#x2014; ekskl. mva</span></footer>
+</div>
+
+<!-- EIGEDOMSINFO PAGE -->
+<div class="page" id="page-eigedomsinfo">
+  <div class="eiendom-wrap">
+    <div class="eiendom-toolbar">
+      <span class="eiendom-brand">&#x1F5FA; Eigedomsinfo</span>
+      <span class="eiendom-status">
+        <span class="eiendom-dot checking" id="eiendom-dot"></span>
+        <span id="eiendom-status-tekst">Sjekkar tilkopling &#x2026;</span>
+      </span>
+      <span class="eiendom-url">localhost : 5051</span>
+      <button class="eiendom-btn" onclick="lastEiendomPaaNytt()">&#x27F3;&#xA0; Last p&#xE5; nytt</button>
+      <button class="eiendom-btn" onclick="window.open('http://localhost:5051','_blank')">&#x2197;&#xA0; Opna i nettlesar</button>
+    </div>
+    <iframe id="eiendom-frame" class="eiendom-frame" src="about:blank" title="Eigedomsinformasjon" sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-downloads" style="display:none"></iframe>
+    <div class="eiendom-offline" id="eiendom-offline">
+      <div class="eiendom-offline-icon">&#x1F50C;</div>
+      <h3>Eigedomsinfo-serveren k&#xF8;yrer ikkje</h3>
+      <p>Start <code>eiendom_info_web.py</code> i terminalen din, s&#xE5; lastar verkt&#xF8;yet seg automatisk her inne.</p>
+      <div class="eiendom-cmd">python eiendom_info_web.py</div>
+      <p style="font-size:.8rem;margin-top:-4px">Serveren startar p&#xE5; port 5051. Fana oppdaterer seg sjølv kvart 8. sekund.</p>
+      <button class="eiendom-btn" onclick="sjekkTilkopling()" style="margin-top:4px;padding:8px 20px">&#x1F504;&#xA0; Pr&#xF8;v igjen</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
