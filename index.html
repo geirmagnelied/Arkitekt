@@ -572,7 +572,7 @@ function computeContrast(){
   dEl.textContent=dStr;
   dEl.style.color=tek17pass?'var(--pass)':delta>=0.28?'var(--warn)':'var(--fail)';
   document.getElementById('deltaThresh').textContent=tek17pass
-    ?'\u2713 Oppfyller TEK17-kravet (\u394L \u2265 0,40) \u2014 differansen er '+dStr
+    ?'\u2713 Oppfyller TEK17-kravet (\u0394L \u2265 0,40) \u2014 differansen er '+dStr
     :'\u2717 Under kravet \u2014 manglar '+(0.4-delta).toFixed(3)+' i luminansdifferanse';
   var TEK=[
     {par:'\u00a712-16 (1)',elem:'Hovudinngangsd\u00f8r / d\u00f8rblad mot karm'},
@@ -590,10 +590,10 @@ function computeContrast(){
     return '<div class="tek-row"><span class="t-par">'+e.par+'</span><span class="t-elem">'+e.elem+'</span><span class="badge '+tkCls+'">'+tkTxt+'</span></div>';
   }).join('');
   var tekMsg,tekCls;
-  if(tek17pass&&delta>=0.6){tekMsg='<strong>Framifr\u00e5 luminanskontrast (\u394L = '+dStr+').</strong> Godt over TEK17-grensa.';tekCls='pass';}
-  else if(tek17pass){tekMsg='<strong>Godkjent luminanskontrast (\u394L = '+dStr+') \u2014 oppfyller TEK17 \u00a712-16.</strong>';tekCls='pass';}
-  else if(delta>=0.28){tekMsg='<strong>Utilstrekkeleg luminanskontrast (\u394L = '+dStr+').</strong> Manglar '+(0.4-delta).toFixed(3)+' i \u394L.';tekCls='warn';}
-  else{tekMsg='<strong>For l\u00e5g luminanskontrast (\u394L = '+dStr+').</strong> Ein av fargane m\u00e5 vera vesentleg lysare eller m\u00f8rkare.';tekCls='fail';}
+  if(tek17pass&&delta>=0.6){tekMsg='<strong>Framifr\u00e5 luminanskontrast (\u0394L = '+dStr+').</strong> Godt over TEK17-grensa.';tekCls='pass';}
+  else if(tek17pass){tekMsg='<strong>Godkjent luminanskontrast (\u0394L = '+dStr+') \u2014 oppfyller TEK17 \u00a712-16.</strong>';tekCls='pass';}
+  else if(delta>=0.28){tekMsg='<strong>Utilstrekkeleg luminanskontrast (\u0394L = '+dStr+').</strong> Manglar '+(0.4-delta).toFixed(3)+' i \u0394L.';tekCls='warn';}
+  else{tekMsg='<strong>For l\u00e5g luminanskontrast (\u0394L = '+dStr+').</strong> Ein av fargane m\u00e5 vera vesentleg lysare eller m\u00f8rkare.';tekCls='fail';}
   var tNote=document.getElementById('tekNote');tNote.innerHTML=tekMsg;tNote.className='ctx-note '+tekCls;
 }
 function resetResults(){
@@ -609,7 +609,7 @@ function resetResults(){
   document.getElementById('markerA').style.left='10%';document.getElementById('markerB').style.left='90%';
   document.getElementById('lumAval').textContent='\u2014';document.getElementById('lumBval').textContent='\u2014';
   var dEl=document.getElementById('deltaVal');dEl.textContent='\u2014';dEl.style.color='var(--text-dim)';
-  document.getElementById('deltaThresh').textContent='Vel to fargar for \u00e5 sj\u00e5 \u394L';
+  document.getElementById('deltaThresh').textContent='Vel to fargar for \u00e5 sj\u00e5 \u0394L';
   var TEK=[{p:'\u00a712-16 (1)',e:'Hovudinngangsd\u00f8r / d\u00f8rblad mot karm'},{p:'\u00a712-16 (1)',e:'Trappeforkant / neseliste mot trinn'},{p:'\u00a712-16 (1)',e:'Handlist / rekkverk mot bakgrunn'},{p:'\u00a712-16 (1)',e:'D\u00f8rkarmar og vindaugskarmar mot vegg'},{p:'\u00a712-16 (2)',e:'Informasjonsskilt \u2014 tekst mot bakgrunn'},{p:'\u00a712-16 (2)',e:'Betjeningspanel / knapp mot omgjevnad'},{p:'\u00a712-16 (1)',e:'Golv / vegg-overgang ved soneskifte'},{p:'\u00a712-16 (3)',e:'Ledelinje / varselmarkering mot golv'}];
   document.getElementById('tekRows').innerHTML=TEK.map(function(e){return '<div class="tek-row"><span class="t-par">'+e.p+'</span><span class="t-elem">'+e.e+'</span><span class="badge badge-empty">\u2014</span></div>';}).join('');
   var tNote=document.getElementById('tekNote');tNote.innerHTML='Vel to fargar fr\u00e5 listene over for \u00e5 vurdere TEK17-krav.';tNote.className='ctx-note';
